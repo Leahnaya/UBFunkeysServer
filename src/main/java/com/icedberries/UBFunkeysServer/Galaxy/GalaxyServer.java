@@ -1,7 +1,9 @@
 package com.icedberries.UBFunkeysServer.Galaxy;
 
+import com.icedberries.UBFunkeysServer.service.EmailService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -22,9 +25,13 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 
 @RestController
 public class GalaxyServer {
+
+    @Autowired
+    private EmailService emailService;
 
     /**
      * This is only used as part of the updater to pass files to the client as requested via URL path
@@ -42,9 +49,7 @@ public class GalaxyServer {
         int errorCode = 0;
         try {
             // Try to open the file as a resource
-            InputStream file = resource.getInputStream();
-
-            byte[] fileContent = org.apache.commons.io.IOUtils.toByteArray(file);
+            byte[] fileContent = org.apache.commons.io.IOUtils.toByteArray(resource.getInputStream());
 
             // Check if the file exists
             if (fileContent.length > 0) {
@@ -96,7 +101,7 @@ public class GalaxyServer {
             // Parse the xml body of the request
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlBody);
+            Document doc = dBuilder.parse(new InputSource(new StringReader(xmlBody)));
             doc.getDocumentElement().normalize();
 
             // Get the root element
@@ -139,7 +144,22 @@ public class GalaxyServer {
 
     private ResponseEntity<String> sendPostcard(Document request) {
         System.out.println("[Galaxy][POST] postcard request received");
-        //TODO: IMPLEMENT METHOD
-        return null;
+        //TODO: PARSE OUT DATA FROM REQUEST
+
+        // Parse data from the request
+        String to = "cockatoo242@gmail.com";
+        String subject = "Greetings From Funkiki Island";
+        String body = "Wow, check out this awesome postcard!";
+        String fileName = "card_0.jpg";
+
+        // Try to send the postcard to the email
+        String response = "";
+        if (emailService.sendMailWithAttachment(to, subject, body, fileName)) {
+            // Send successful
+            response = "<postcard result=\"0\" reason=\"Postcard Sent!\" cost=\"5\" />";
+        } else {
+            response = "<postcard result=\"1\" reason=\"Unable to send postcard at this time!\" cost=\"0\" />";
+        }
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
