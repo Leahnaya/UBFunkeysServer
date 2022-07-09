@@ -30,17 +30,18 @@ public class EmailServiceImpl implements EmailService {
         MimeMessagePreparator preparator = new MimeMessagePreparator() {
             @Override
             public void prepare(MimeMessage mimeMessage) throws Exception {
-                // Set the main parts of the email
-                mimeMessage.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
-                mimeMessage.setFrom(new InternetAddress(from));
-                mimeMessage.setSubject(subject);
-                mimeMessage.setText(body);
+                MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
+
+                // Set the email fields
+                helper.addTo(to);
+                helper.setFrom(from);
+                helper.setSubject(subject);
+                helper.setText(body, true);
 
                 // Attach the postcard
                 Resource resource = new ClassPathResource("static/Postcards/" + fileToAttach);
                 byte[] fileContent = org.apache.commons.io.IOUtils.toByteArray(resource.getInputStream());
-                MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
-                helper.addAttachment(fileToAttach, new ByteArrayResource(fileContent));
+                helper.addAttachment(fileToAttach, new ByteArrayResource(fileContent), "image/jpeg");
             }
         };
 

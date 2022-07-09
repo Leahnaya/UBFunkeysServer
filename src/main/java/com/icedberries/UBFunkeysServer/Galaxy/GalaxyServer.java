@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -60,7 +62,7 @@ public class GalaxyServer {
                 IOUtils.copy(fileContentStream, response.getOutputStream());
 
                 // Flush the buffer
-                //TODO: MIGHT ALSO NEED TO SET THE FILE CONTENT LENGTH AS A HEADER
+                // MIGHT ALSO NEED TO SET THE FILE CONTENT LENGTH AS A HEADER
                 response.flushBuffer();
             } else {
                 throw new Exception("[Galaxy][GET][ERROR] Requested file doesn't exist: " + pathToFile);
@@ -97,6 +99,9 @@ public class GalaxyServer {
      */
     @PostMapping("/")
     public ResponseEntity<String> GalaxyPostResponse(@RequestBody String xmlBody) {
+        // Log the request
+        System.out.println("[Galaxy][POST] New Request: " + xmlBody);
+
         try {
             // Parse the xml body of the request
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -104,19 +109,20 @@ public class GalaxyServer {
             Document doc = dBuilder.parse(new InputSource(new StringReader(xmlBody)));
             doc.getDocumentElement().normalize();
 
-            // Get the root element
-            String root = doc.getDocumentElement().getNodeName();
+            // Get the element for the command
+            NodeList nodes = doc.getDocumentElement().getChildNodes();
+            String command = nodes.item(0).getNodeName();
 
             // Handle based on the root element
-            switch(root) {
+            switch(command) {
                 case "postcard":
-                    return sendPostcard(doc);
+                    return sendPostcard((Element)nodes.item(0));
                 case "savecrib":
                     return saveCrib(doc);
                 case "loadcrib":
                     return loadCrib(doc);
             default:
-                System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + root);
+                System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         } catch (ParserConfigurationException | IOException | SAXException e) {
@@ -127,8 +133,6 @@ public class GalaxyServer {
     }
 
     //TODO: USE THIS FOR THE XML PARSING: https://www.tutorialspoint.com/java_xml/java_dom_parse_document.htm#
-
-    //TODO: USE THIS FOR THE ARKONE SERVER: https://github.com/JavaGrinko/tcp-spring-boot-starter
 
     private ResponseEntity<String> loadCrib(Document request) {
         System.out.println("[Galaxy][POST] loadcrib request received");
@@ -142,15 +146,14 @@ public class GalaxyServer {
         return null;
     }
 
-    private ResponseEntity<String> sendPostcard(Document request) {
+    private ResponseEntity<String> sendPostcard(Element element) {
         System.out.println("[Galaxy][POST] postcard request received");
-        //TODO: PARSE OUT DATA FROM REQUEST
 
         // Parse data from the request
-        String to = "cockatoo242@gmail.com";
-        String subject = "Greetings From Funkiki Island";
-        String body = "Wow, check out this awesome postcard!";
-        String fileName = "card_0.jpg";
+        String to = element.getAttribute("to");
+        String subject = element.getAttribute("subject");
+        String body = element.getAttribute("body");
+        String fileName = element.getAttribute("id");
 
         // Try to send the postcard to the email
         String response = "";

@@ -13,9 +13,13 @@ public class ArkOneController implements TcpHandler {
     public void receiveData(Connection connection, byte[] data) {
         //TODO: IMPLEMENT PLUGIN CHECKING AND FORWARDING HERE
         //Currently just echos back the received data until implemented
-        String s = new String(data);
+
+        // Log the received request
+        String xmlData = new String(data);
+        System.out.println("[ArkOne] New Request: " + xmlData);
+
         try {
-            connection.send(s.toUpperCase().getBytes());
+            connection.send(xmlData.toUpperCase().getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -23,13 +27,11 @@ public class ArkOneController implements TcpHandler {
 
     @Override
     public void connectEvent(Connection connection) {
-        // Just log connections
-        System.out.println("[ArkOne][EVENT] Client connection from: " + connection.getAddress().getCanonicalHostName());
+        // No need to log anything
     }
 
     @Override
     public void disconnectEvent(Connection connection) {
-        // Just log disconnections
-        System.out.println("[ArkOne][EVENT] Client disconnected: " + connection.getAddress().getCanonicalHostName());
+        // No need to log anything
     }
 }
