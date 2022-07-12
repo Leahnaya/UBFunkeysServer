@@ -28,7 +28,12 @@ public class CribServiceImpl implements CribService {
     }
 
     @Override
-    public Crib getByCribName(String cribName) {
-        return cribRepository.getByCribName(cribName);
+    public Crib findByCribName(String cribName) {
+        return cribRepository.findByCribName(cribName);
+    }
+
+    @Override
+    public Crib findById(Integer id) {
+        return cribRepository.findById(id).orElse(null);
     }
 }

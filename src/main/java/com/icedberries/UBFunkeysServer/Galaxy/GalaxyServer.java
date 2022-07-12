@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
 public class GalaxyServer {
@@ -133,7 +134,7 @@ public class GalaxyServer {
                 case "savecrib":
                     return saveCrib(nodes.item(0));
                 case "loadcrib":
-                    return loadCrib(doc);
+                    return loadCrib((Element)nodes.item(0));
             default:
                 System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -145,12 +146,73 @@ public class GalaxyServer {
         }
     }
 
-    //TODO: USE THIS FOR THE XML PARSING: https://www.tutorialspoint.com/java_xml/java_dom_parse_document.htm#
-
-    private ResponseEntity<String> loadCrib(Document request) {
+    private ResponseEntity<String> loadCrib(Element element) {
         System.out.println("[Galaxy][POST] loadcrib request received");
-        //TODO: IMPLEMENT METHOD
-        return null;
+
+        /*
+         * 0 - Success
+         * 1 - Error Loading Crib / Can't find a crib with that name (need to test codes)
+         */
+        int resultCode = 0;
+        String reason = "";
+
+        // Get the requested crib name
+        String cribName = element.getAttribute("name");
+
+        // Check if looking for a specific crib or a random one
+        String profileData = "";
+        if (cribName.isEmpty()) {
+            // Random Crib Requested ("Surprise Me")
+
+            // Get a total number of all cribs
+            Integer cribCount = cribService.count();
+
+            // Ensure there are cribs in the DB
+            if (cribCount <= 0) {
+                // No cribs in the db
+                resultCode = 1;
+                reason = "Can't find a crib at this time...";
+            } else {
+                // At least 1 crib in the db
+
+                // Use that total to generate a random id number between 1 and that number
+                Integer randomCribId = ThreadLocalRandom.current().nextInt(1, cribCount + 1);
+
+                // Get the crib
+                Crib randomCrib = cribService.findById(randomCribId);
+
+                // Make sure the crib was grabbed properly
+                if (randomCrib == null) {
+                    // Unable to get the crib
+                    resultCode = 1;
+                    reason = "Can't find a crib at this time...";
+                } else {
+                    // Random crib grabbed successfully
+                    profileData = randomCrib.getProfileData();
+                }
+            }
+        } else {
+            // Specific Crib Requested
+            Crib requestedCrib = cribService.findByCribName(cribName);
+
+            // Check if a crib with that name exists
+            if (requestedCrib == null) {
+                // Crib doesn't exist
+                resultCode = 1;
+                reason = "Can't find a crib by that name...";
+            } else {
+                // Crib with that name exists
+                profileData = requestedCrib.getProfileData();
+            }
+        }
+
+        // Build a response
+        String stringBuilder = "<loadcrib result=\"" + resultCode + "\" reason=\"" + reason + "\" currCrib=\"1\" name=\"" + cribName + "\">"
+                + profileData
+                + "</loadcrib>";
+
+        // Send the response
+        return new ResponseEntity<>(stringBuilder, HttpStatus.OK);
     }
 
     private ResponseEntity<String> saveCrib(Node node) {
@@ -210,7 +272,7 @@ public class GalaxyServer {
             // Check if a crib with that name already exists
             if (cribService.existsByCribName(cribName)) {
                 // That crib already exists, check if the same username
-                Crib existingCrib = cribService.getByCribName(cribName);
+                Crib existingCrib = cribService.findByCribName(cribName);
                 if (existingCrib.getUsername().equals(username)) {
                     // Same username, can update crib
                     existingCrib.setProfileData(profileData);

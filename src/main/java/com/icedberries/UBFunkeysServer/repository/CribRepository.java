@@ -9,5 +9,5 @@ public interface CribRepository extends CrudRepository<Crib, Integer> {
 
     Boolean existsByCribName(String cribName);
 
-    Crib getByCribName(String cribName);
+    Crib findByCribName(String cribName);
 }

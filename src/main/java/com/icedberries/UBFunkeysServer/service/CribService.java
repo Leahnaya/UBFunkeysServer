@@ -10,5 +10,7 @@ public interface CribService {
 
     Boolean existsByCribName(String cribName);
 
-    Crib getByCribName(String cribName);
+    Crib findByCribName(String cribName);
+
+    Crib findById(Integer id);
 }
