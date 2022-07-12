@@ -1,5 +1,7 @@
 package com.icedberries.UBFunkeysServer.Galaxy;
 
+import com.icedberries.UBFunkeysServer.domain.Crib;
+import com.icedberries.UBFunkeysServer.service.CribService;
 import com.icedberries.UBFunkeysServer.service.EmailService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -24,16 +27,25 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.StringWriter;
 
 @RestController
 public class GalaxyServer {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private CribService cribService;
 
     /**
      * This is only used as part of the updater to pass files to the client as requested via URL path
@@ -119,7 +131,7 @@ public class GalaxyServer {
                 case "postcard":
                     return sendPostcard((Element)nodes.item(0));
                 case "savecrib":
-                    return saveCrib(doc);
+                    return saveCrib(nodes.item(0));
                 case "loadcrib":
                     return loadCrib(doc);
             default:
@@ -141,10 +153,82 @@ public class GalaxyServer {
         return null;
     }
 
-    private ResponseEntity<String> saveCrib(Document request) {
+    private ResponseEntity<String> saveCrib(Node node) {
         System.out.println("[Galaxy][POST] savecrib request received");
-        //TODO: IMPLEMENT METHOD
-        return null;
+
+        /*
+         * 0 - Success
+         * 1 - Error Saving Crib / Crib already exists (need to test codes)
+         */
+        int resultCode = 0;
+        String reason = "Crib Successfully Saved!";
+
+        Element rootElement = (Element)node;
+        Node profileNode = node.getFirstChild();
+        Element profileElement = (Element)profileNode;
+
+        // Set variables we can use to build the crib later
+        String cribName = rootElement.getAttribute("name");
+        String username = profileElement.getAttribute("name");
+        String currCrib = rootElement.getAttribute("currCrib");
+
+        String profileData = "";
+
+        // Turn the node passed in into its own document to generate the profileData
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document newDocument = builder.newDocument();
+            Node importedNode = newDocument.importNode(profileNode, true);
+            newDocument.appendChild(importedNode);
+
+            DOMSource domSource = new DOMSource(newDocument);
+            StringWriter writer = new StringWriter();
+            StreamResult result = new StreamResult(writer);
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.transform(domSource, result);
+            profileData = writer.toString().replaceAll("(<\\?xml.*?\\?>)","");
+        } catch (ParserConfigurationException | TransformerException e) {
+            System.out.println("[Galaxy][POST] Exception thrown when saving crib: ");
+            e.printStackTrace();
+            resultCode = 1;
+            reason = "Error saving crib! Please try again later...";
+        }
+
+        // Build a new Crib if no errors were thrown
+        if (resultCode != 1) {
+            Crib newCrib = Crib.builder()
+                    .cribName(cribName)
+                    .username(username)
+                    .profileData(profileData)
+                    .build();
+
+            // Attempt to save the crib
+
+            // Check if a crib with that name already exists
+            if (cribService.existsByCribName(cribName)) {
+                // That crib already exists, check if the same username
+                Crib existingCrib = cribService.getByCribName(cribName);
+                if (existingCrib.getUsername().equals(username)) {
+                    // Same username, can update crib
+                    existingCrib.setProfileData(profileData);
+                    cribService.save(existingCrib);
+                } else {
+                    // Not the same username, can't save crib
+                    resultCode = 1;
+                    reason = "Crib name already exists!";
+                }
+            } else {
+                // Crib with that name doesn't exist, save it
+                cribService.save(newCrib);
+            }
+        }
+
+        // Send the response
+        String response = "<savecrib result=\"" + resultCode + "\" currCrib=\"" + currCrib + "\" reason=\"" + reason + "\" register=\"1\" name=\"" + cribName + "\" />";
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     private ResponseEntity<String> sendPostcard(Element element) {
@@ -157,7 +241,7 @@ public class GalaxyServer {
         String fileName = element.getAttribute("id");
 
         // Try to send the postcard to the email
-        String response = "";
+        String response;
         if (emailService.sendMailWithAttachment(to, subject, body, fileName)) {
             // Send successful
             response = "<postcard result=\"0\" reason=\"Postcard Sent!\" cost=\"5\" />";

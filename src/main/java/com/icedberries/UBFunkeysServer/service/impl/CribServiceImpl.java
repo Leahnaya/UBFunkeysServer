@@ -21,4 +21,14 @@ public class CribServiceImpl implements CribService {
     public void save(Crib crib) {
         cribRepository.save(crib);
     }
+
+    @Override
+    public Boolean existsByCribName(String cribName) {
+        return cribRepository.existsByCribName(cribName);
+    }
+
+    @Override
+    public Crib getByCribName(String cribName) {
+        return cribRepository.getByCribName(cribName);
+    }
 }

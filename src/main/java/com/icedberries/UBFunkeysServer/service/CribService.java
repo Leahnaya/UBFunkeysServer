@@ -7,4 +7,8 @@ public interface CribService {
     Integer count();
 
     void save(Crib crib);
+
+    Boolean existsByCribName(String cribName);
+
+    Crib getByCribName(String cribName);
 }
