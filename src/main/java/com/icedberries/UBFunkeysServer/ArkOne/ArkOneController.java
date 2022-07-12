@@ -18,6 +18,9 @@ public class ArkOneController implements TcpHandler {
         String xmlData = new String(data);
         System.out.println("[ArkOne] New Request: " + xmlData);
 
+        //TODO: USE THAT FOR PASSWORD ENCRYPTION FOR STORING IN THE DB
+        //TODO: SEE THIS ARTICLE FOR ENCODING: https://www.baeldung.com/spring-security-registration-password-encoding-bcrypt
+
         try {
             connection.send(xmlData.toUpperCase().getBytes());
         } catch (IOException e) {

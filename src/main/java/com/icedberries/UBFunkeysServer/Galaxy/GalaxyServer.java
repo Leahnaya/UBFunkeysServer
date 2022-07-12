@@ -77,6 +77,7 @@ public class GalaxyServer {
         } catch (Exception e) {
             // File doesn't exist error caught here
             System.out.println(e.getMessage());
+            e.printStackTrace();
 
             // Set the error code
             errorCode = HttpServletResponse.SC_NOT_FOUND;
@@ -161,7 +162,7 @@ public class GalaxyServer {
             // Send successful
             response = "<postcard result=\"0\" reason=\"Postcard Sent!\" cost=\"5\" />";
         } else {
-            response = "<postcard result=\"1\" reason=\"Unable to send postcard at this time!\" cost=\"0\" />";
+            response = "<postcard result=\"1\" reason=\"Unable to send postcard at this time!\" cost=\"5\" />";
         }
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
