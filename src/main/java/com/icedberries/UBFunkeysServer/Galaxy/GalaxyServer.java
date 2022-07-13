@@ -207,12 +207,12 @@ public class GalaxyServer {
         }
 
         // Build a response
-        String stringBuilder = "<loadcrib result=\"" + resultCode + "\" reason=\"" + reason + "\" currCrib=\"1\" name=\"" + cribName + "\">"
+        String response = "<loadcrib result=\"" + resultCode + "\" reason=\"" + reason + "\" currCrib=\"1\" name=\"" + cribName + "\">"
                 + profileData
                 + "</loadcrib>";
 
         // Send the response
-        return new ResponseEntity<>(stringBuilder, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     private ResponseEntity<String> saveCrib(Node node) {
