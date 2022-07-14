@@ -10,5 +10,9 @@ public interface UserService {
 
     Boolean existsByUUID(Integer uuid);
 
-    void save(User user);
+    User save(User user);
+
+    Boolean existsByUsername(String username);
+
+    Optional<User> findByUsername(String username);
 }

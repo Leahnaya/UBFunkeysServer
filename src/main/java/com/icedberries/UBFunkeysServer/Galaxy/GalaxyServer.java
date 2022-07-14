@@ -1,5 +1,6 @@
 package com.icedberries.UBFunkeysServer.Galaxy;
 
+import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.domain.Crib;
 import com.icedberries.UBFunkeysServer.service.CribService;
 import com.icedberries.UBFunkeysServer.service.EmailService;
@@ -245,13 +246,7 @@ public class GalaxyServer {
             Node importedNode = newDocument.importNode(profileNode, true);
             newDocument.appendChild(importedNode);
 
-            DOMSource domSource = new DOMSource(newDocument);
-            StringWriter writer = new StringWriter();
-            StreamResult result = new StreamResult(writer);
-            TransformerFactory tf = TransformerFactory.newInstance();
-            Transformer transformer = tf.newTransformer();
-            transformer.transform(domSource, result);
-            profileData = writer.toString().replaceAll("(<\\?xml.*?\\?>)","");
+            profileData = ArkOneParser.RemoveXMLTag(newDocument);
         } catch (ParserConfigurationException | TransformerException e) {
             System.out.println("[Galaxy][POST] Exception thrown when saving crib: ");
             e.printStackTrace();

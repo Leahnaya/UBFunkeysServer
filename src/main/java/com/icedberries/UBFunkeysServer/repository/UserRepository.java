@@ -15,4 +15,9 @@ public interface UserRepository extends CrudRepository<User, Integer> {
 
     @Query("select user from User user where user.UUID = :uuid")
     Optional<User> findByUUID(@Param("uuid") Integer uuid);
+
+    Boolean existsByUsername(String username);
+
+    @Query("select user from User user where user.username = :username")
+    Optional<User> findByUsername(@Param("username") String username);
 }

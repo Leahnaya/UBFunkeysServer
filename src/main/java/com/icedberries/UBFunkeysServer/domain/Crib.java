@@ -5,12 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Getter
 @Setter
@@ -29,5 +26,7 @@ public class Crib {
 
     private String username;
 
+    @Column(columnDefinition = "MEDIUMTEXT")
+    @Type(type = "org.hibernate.type.TextType")
     private String profileData;
 }
