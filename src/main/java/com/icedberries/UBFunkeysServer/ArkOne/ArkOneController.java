@@ -89,7 +89,11 @@ public class ArkOneController implements TcpHandler {
 
                     // Plugin 7 (Galaxy)
                     case "lpv":
+                        // TODO: FIX THIS METHOD
                         responses.add(galaxyPlugin.LoadProfileVersion());
+                        break;
+                    case "vsu":
+                        responses.add(galaxyPlugin.VersionStatisticsRequest());
                         break;
 
                     // Plugin 10 (Trunk)

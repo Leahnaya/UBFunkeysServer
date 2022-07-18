@@ -9,4 +9,8 @@ public class GalaxyPlugin {
         //TODO: IMPLEMENT THIS WITH PROFILE SAVING
         return "<h7_0><lpv /></h7_0>";
     }
+
+    public String VersionStatisticsRequest() {
+        return "<h7_0><vsu id=\"0\" /></h7_0>";
+    }
 }
