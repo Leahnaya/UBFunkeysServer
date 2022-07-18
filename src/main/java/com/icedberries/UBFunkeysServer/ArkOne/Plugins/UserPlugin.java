@@ -33,7 +33,7 @@ public class UserPlugin {
                 .username(username)
                 .password(passwordEncoder.encode(password))
                 .securityQuestion(securityQuestion)
-                .securityAnswer(securityAnswer)
+                .securityAnswer(passwordEncoder.encode(securityAnswer))
                 .build();
 
         // 0 - Successfully registered
@@ -69,5 +69,9 @@ public class UserPlugin {
         doc.appendChild(rootElement);
 
         return ArkOneParser.RemoveXMLTag(doc);
+    }
+
+    public String Ping() {
+        return "<p t=\"30\" />";
     }
 }

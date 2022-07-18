@@ -64,6 +64,9 @@ public class ArkOneController implements TcpHandler {
                     case "u_reg":
                         responses.add(userPlugin.RegisterUser(commandInfo));
                         break;
+                    case "p":
+                        responses.add(userPlugin.Ping());
+                        break;
 
                     // Plugin 7 (Galaxy)
                     case "lpv":
@@ -92,9 +95,8 @@ public class ArkOneController implements TcpHandler {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 outputStream.write(response.getBytes());
                 outputStream.write((byte)0x00);
-                byte[] combinedResponse = outputStream.toByteArray();
 
-                connection.send(combinedResponse);
+                connection.send(outputStream.toByteArray());
 
                 System.out.println("[ArkOne] Response: " + response);
             } catch (IOException e) {
