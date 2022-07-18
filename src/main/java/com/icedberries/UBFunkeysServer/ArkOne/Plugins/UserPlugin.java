@@ -161,6 +161,30 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
+    public String ChangePhoneStatus(Element element) throws ParserConfigurationException, TransformerException {
+        //TODO: VERIFY THE ATTRIBUTE NAME
+        User user = userService.findByUUID(Integer.valueOf(element.getAttribute("id"))).orElse(null);
+
+        //TODO: VERIFY THE ATTRIBUTE NAME
+        // Update that user's chat status
+        user.setPhoneStatus(Integer.valueOf(element.getAttribute("ph")));
+        userService.save(user);
+
+        // Build the response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.newDocument();
+        Element rootElement = doc.createElement("u_cph");
+        rootElement.setAttribute("ph", String.valueOf(user.getPhoneStatus()));
+        rootElement.setAttribute("id", String.valueOf(user.getUUID()));
+        doc.appendChild(rootElement);
+
+        // Announce to friends
+        arkOneSender.SendStatusUpdate("u_cph", "ph", String.valueOf(user.getPhoneStatus()), user.getUUID());
+
+        return ArkOneParser.RemoveXMLTag(doc);
+    }
+
     public String Ping() {
         return "<p t=\"30\" />";
     }

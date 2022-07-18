@@ -80,6 +80,9 @@ public class ArkOneController implements TcpHandler {
                     case "u_ccs":
                         responses.add(userPlugin.ChangeChatStatus(commandInfo));
                         break;
+                    case "u_cph":
+                        responses.add(userPlugin.ChangePhoneStatus(commandInfo));
+                        break;
                     case "p":
                         responses.add(userPlugin.Ping());
                         break;
@@ -129,8 +132,6 @@ public class ArkOneController implements TcpHandler {
 
     @Override
     public void disconnectEvent(Connection connection) {
-        //TODO: WRITE DISCONNECT LOGIC for u_cos
-        // SOME HOW STORE THE USER ID HERE SO WE CAN SET THEIR isOnline status to offline
         User user = userService.findByConnectionId(connection.getClientIdentifier()).orElse(null);
 
         if (user != null) {
