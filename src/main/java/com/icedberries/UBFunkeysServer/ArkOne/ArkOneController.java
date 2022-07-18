@@ -77,6 +77,9 @@ public class ArkOneController implements TcpHandler {
                     case "u_gbl":
                         responses.add(userPlugin.GetBuddyList(commandInfo));
                         break;
+                    case "u_ccs":
+                        responses.add(userPlugin.ChangeChatStatus(commandInfo));
+                        break;
                     case "p":
                         responses.add(userPlugin.Ping());
                         break;

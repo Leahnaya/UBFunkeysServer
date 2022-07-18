@@ -89,10 +89,12 @@ public class TcpServer implements Server, Connection.Listener {
     public void connected(Connection connection)
             throws InvocationTargetException, IllegalAccessException {
         logger.info("New connection! Ip: " + connection.getAddress().getCanonicalHostName() + ".");
-        connections.add(connection);
 
         // Generate a UUID for this connection
         connection.setClientIdentifier(UUID.randomUUID());
+
+        // Save it to all connections
+        connections.add(connection);
 
         logger.info("Current connections count: " + connections.size());
         for (Connection.Listener listener : listeners) {
@@ -104,10 +106,12 @@ public class TcpServer implements Server, Connection.Listener {
     public void disconnected(Connection connection)
             throws InvocationTargetException, IllegalAccessException {
         logger.info("Disconnect! Ip: " + connection.getAddress().getCanonicalHostName() + ".");
-        connections.remove(connection);
 
         // Remove the UUID
         connection.setClientIdentifier(null);
+
+        // Remove it from all connections
+        connections.remove(connection);
 
         logger.info("Current connections count: " + connections.size());
         for (Connection.Listener listener : listeners) {

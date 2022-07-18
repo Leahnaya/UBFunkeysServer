@@ -16,7 +16,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.UUID;
 
 @Service
 public class UserPlugin {
@@ -111,7 +111,7 @@ public class UserPlugin {
                 if (buddyUser == null) {
                     continue;
                 }
-
+                //TODO: VERIFY THIS BUILDS THE XML AS EXPECTED
                 // Get information off their data to build a xml tag
                 Element buddyElement = doc.createElement("buddy");
                 buddyElement.setAttribute("id", String.valueOf(buddyUser.getUUID()));
@@ -128,10 +128,35 @@ public class UserPlugin {
         user.setIsOnline(1);
         userService.save(user);
 
+        // Let all your buddies know you are online
         if (buddyList.size() > 0) {
             arkOneSender.SendStatusUpdate("u_cos", "o",
                     String.valueOf(user.getIsOnline()), user.getUUID());
         }
+
+        return ArkOneParser.RemoveXMLTag(doc);
+    }
+
+    public String ChangeChatStatus(Element element) throws ParserConfigurationException, TransformerException {
+        //TODO: VERIFY THE ATTRIBUTE NAME
+        User user = userService.findByUUID(Integer.valueOf(element.getAttribute("id"))).orElse(null);
+
+        //TODO: VERIFY THE ATTRIBUTE NAME
+        // Update that user's chat status
+        user.setChatStatus(Integer.valueOf(element.getAttribute("s")));
+        userService.save(user);
+
+        // Build the response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.newDocument();
+        Element rootElement = doc.createElement("u_ccs");
+        rootElement.setAttribute("s", String.valueOf(user.getChatStatus()));
+        rootElement.setAttribute("id", String.valueOf(user.getUUID()));
+        doc.appendChild(rootElement);
+
+        // Announce to friends
+        arkOneSender.SendStatusUpdate("u_ccs", "s", String.valueOf(user.getChatStatus()), user.getUUID());
 
         return ArkOneParser.RemoveXMLTag(doc);
     }
