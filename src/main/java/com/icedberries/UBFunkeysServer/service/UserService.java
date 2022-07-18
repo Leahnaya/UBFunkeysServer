@@ -3,6 +3,7 @@ package com.icedberries.UBFunkeysServer.service;
 import com.icedberries.UBFunkeysServer.domain.User;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface UserService {
 
@@ -15,4 +16,8 @@ public interface UserService {
     Boolean existsByUsername(String username);
 
     Optional<User> findByUsername(String username);
+
+    String getBuddyList(Integer uuid);
+
+    Optional<User> findByConnectionId(UUID connectionId);
 }

@@ -14,6 +14,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import java.util.UUID;
 
 @Service
 public class BasePlugin {
@@ -151,7 +152,7 @@ public class BasePlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
-    public String LoginRegisteredUser(Element element) throws ParserConfigurationException, TransformerException {
+    public String LoginRegisteredUser(Element element, UUID connectionId) throws ParserConfigurationException, TransformerException {
         // Response r codes:
         // 0 - Accepted Login
         // 1 - Already exist in Terrapinia
@@ -179,6 +180,10 @@ public class BasePlugin {
             } else {
                 // Login success
                 uuid = String.valueOf(user.getUUID());
+
+                // Store the UUID for our connection to the server to the DB
+                user.setConnectionId(connectionId);
+                userService.save(user);
             }
         }
 

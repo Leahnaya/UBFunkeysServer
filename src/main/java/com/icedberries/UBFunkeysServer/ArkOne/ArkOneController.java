@@ -3,7 +3,10 @@ package com.icedberries.UBFunkeysServer.ArkOne;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.BasePlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.GalaxyPlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.UserPlugin;
+import com.icedberries.UBFunkeysServer.domain.User;
+import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
+import javagrinko.spring.tcp.Server;
 import javagrinko.spring.tcp.TcpController;
 import javagrinko.spring.tcp.TcpHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,13 @@ import java.util.List;
 public class ArkOneController implements TcpHandler {
 
     public static final String IP_ADDRESS = "127.0.0.1";
+
+    // Services
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private ArkOneSender arkOneSender;
 
     // Plugins
     @Autowired
@@ -57,12 +67,15 @@ public class ArkOneController implements TcpHandler {
                         responses.add(basePlugin.GetServiceDetails(commandInfo.getAttribute("s")));
                         break;
                     case "a_lru":
-                        responses.add(basePlugin.LoginRegisteredUser(commandInfo));
+                        responses.add(basePlugin.LoginRegisteredUser(commandInfo, connection.getClientIdentifier()));
                         break;
 
                     // Plugin 1 (User)
                     case "u_reg":
                         responses.add(userPlugin.RegisterUser(commandInfo));
+                        break;
+                    case "u_gbl":
+                        responses.add(userPlugin.GetBuddyList(commandInfo));
                         break;
                     case "p":
                         responses.add(userPlugin.Ping());
@@ -113,6 +126,24 @@ public class ArkOneController implements TcpHandler {
 
     @Override
     public void disconnectEvent(Connection connection) {
-        // No need to log anything
+        //TODO: WRITE DISCONNECT LOGIC for u_cos
+        // SOME HOW STORE THE USER ID HERE SO WE CAN SET THEIR isOnline status to offline
+        User user = userService.findByConnectionId(connection.getClientIdentifier()).orElse(null);
+
+        if (user != null) {
+            // Update the online status to offline and clear the connection ID
+            user.setIsOnline(0);
+            user.setConnectionId(null);
+
+            // Update the user in the DB
+            userService.save(user);
+
+            // Notify other users that they went offline
+            try {
+                arkOneSender.SendStatusUpdate("u_cos", "o", "0", user.getUUID());
+            } catch(Exception e) {
+                // Do nothing since the client is disconnecting anyway
+            }
+        }
     }
 }

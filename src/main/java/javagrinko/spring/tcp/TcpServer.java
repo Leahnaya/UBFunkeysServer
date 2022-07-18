@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
@@ -89,6 +90,10 @@ public class TcpServer implements Server, Connection.Listener {
             throws InvocationTargetException, IllegalAccessException {
         logger.info("New connection! Ip: " + connection.getAddress().getCanonicalHostName() + ".");
         connections.add(connection);
+
+        // Generate a UUID for this connection
+        connection.setClientIdentifier(UUID.randomUUID());
+
         logger.info("Current connections count: " + connections.size());
         for (Connection.Listener listener : listeners) {
             listener.connected(connection);
@@ -100,6 +105,10 @@ public class TcpServer implements Server, Connection.Listener {
             throws InvocationTargetException, IllegalAccessException {
         logger.info("Disconnect! Ip: " + connection.getAddress().getCanonicalHostName() + ".");
         connections.remove(connection);
+
+        // Remove the UUID
+        connection.setClientIdentifier(null);
+
         logger.info("Current connections count: " + connections.size());
         for (Connection.Listener listener : listeners) {
             listener.disconnected(connection);

@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TcpConnection implements Connection {
@@ -19,6 +20,8 @@ public class TcpConnection implements Connection {
     private OutputStream outputStream;
     private Socket socket;
     private List<Listener> listeners = new CopyOnWriteArrayList<>();
+
+    private UUID clientIdentifier = null;
 
     TcpConnection(Socket socket) {
         this.socket = socket;
@@ -92,5 +95,15 @@ public class TcpConnection implements Connection {
     @Override
     public void close() throws IOException {
         socket.close();
+    }
+
+    @Override
+    public UUID getClientIdentifier() {
+        return clientIdentifier;
+    }
+
+    @Override
+    public void setClientIdentifier(UUID newId) {
+        this.clientIdentifier = newId;
     }
 }

@@ -1,6 +1,7 @@
 package com.icedberries.UBFunkeysServer.ArkOne.Plugins;
 
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
+import com.icedberries.UBFunkeysServer.ArkOne.ArkOneSender;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,9 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
 
 @Service
 public class UserPlugin {
@@ -22,6 +26,9 @@ public class UserPlugin {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ArkOneSender arkOneSender;
 
     public String RegisterUser(Element element) throws ParserConfigurationException, TransformerException {
         String username = element.getAttribute("l");
@@ -67,6 +74,64 @@ public class UserPlugin {
         rootElement.setAttribute("u", uniqueId);
 
         doc.appendChild(rootElement);
+
+        return ArkOneParser.RemoveXMLTag(doc);
+    }
+
+    public String GetBuddyList(Element element) throws ParserConfigurationException, TransformerException {
+        //TODO: VERIFY THE ATTRIBUTE NAME
+        User user = userService.findByUUID(Integer.valueOf(element.getAttribute("id"))).orElse(null);
+
+        // Start of response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.newDocument();
+        Element rootElement = doc.createElement("u_gbl");
+        rootElement.setAttribute("r", "0");
+        doc.appendChild(rootElement);
+
+        // User should never be null here but check just in case
+        if (user == null) {
+            return ArkOneParser.RemoveXMLTag(doc);
+        }
+
+        ArrayList<String> buddyList = new ArrayList<>(Arrays.asList(user.getRawBuddyList().split(",")));
+
+        // Skip NULL or blank buddy lists
+        if (buddyList.size() > 0) {
+            for (String buddy : buddyList) {
+                if (buddy.equals("")) { continue; }
+
+                Integer buddyUUID = Integer.valueOf(buddy);
+
+                // Get the buddy's information
+                User buddyUser = userService.findByUUID(buddyUUID).orElse(null);
+
+                // Make sure they aren't null
+                if (buddyUser == null) {
+                    continue;
+                }
+
+                // Get information off their data to build a xml tag
+                Element buddyElement = doc.createElement("buddy");
+                buddyElement.setAttribute("id", String.valueOf(buddyUser.getUUID()));
+                buddyElement.setAttribute("n", buddyUser.getUsername());
+                buddyElement.setAttribute("s", String.valueOf(buddyUser.getChatStatus()));
+                buddyElement.setAttribute("o", String.valueOf(buddyUser.getIsOnline()));
+                buddyElement.setAttribute("ph", String.valueOf(buddyUser.getPhoneStatus()));
+
+                rootElement.appendChild(buddyElement);
+            }
+        }
+
+        // The client doesn't set online status.  So the server sets it when it gets all the user's buddies
+        user.setIsOnline(1);
+        userService.save(user);
+
+        if (buddyList.size() > 0) {
+            arkOneSender.SendStatusUpdate("u_cos", "o",
+                    String.valueOf(user.getIsOnline()), user.getUUID());
+        }
 
         return ArkOneParser.RemoveXMLTag(doc);
     }

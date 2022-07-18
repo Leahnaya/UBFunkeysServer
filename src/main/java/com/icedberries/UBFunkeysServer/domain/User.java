@@ -14,6 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.util.ArrayList;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -64,9 +65,6 @@ public class User {
     @Column(name = "buddyList")
     private String rawBuddyList;
 
-    @Transient
-    private ArrayList<User> buddyList;
-
     // Connection ID to send data to from other Users
-    private String connectionId;
+    private java.util.UUID connectionId;
 }
