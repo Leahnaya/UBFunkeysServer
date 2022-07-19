@@ -130,9 +130,6 @@ public class TcpServer implements Server, Connection.Listener {
             throws InvocationTargetException, IllegalAccessException {
         logger.info("Disconnect! Ip: " + connection.getAddress().getCanonicalHostName() + ".");
 
-        // Remove the UUID
-        connection.setClientIdentifier(null);
-
         // Remove it from all connections
         connections.remove(connection);
 

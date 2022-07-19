@@ -186,9 +186,10 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
-    public String AddBuddy(Element element) throws ParserConfigurationException, TransformerException {
+    public String AddBuddy(Element element, Connection connection) throws ParserConfigurationException, TransformerException {
         // Try to get a buddy with the username passed
         User buddy = userService.findByUsername(element.getAttribute("n")).orElse(null);
+        User thisUser = server.getConnectedUsers().get(connection.getClientIdentifier());
 
         boolean fail = false;
         boolean isAlreadyBuddy = false;
@@ -224,6 +225,7 @@ public class UserPlugin {
             fail = true;
         }
 
+        rootElement.setAttribute("n", element.getAttribute("n"));
         resp.appendChild(rootElement);
 
         // Check if failed
@@ -232,8 +234,9 @@ public class UserPlugin {
         } else {
             Document send = dBuilder.newDocument();
             Element sendRoot = send.createElement("u_abr");
-            sendRoot.setAttribute("b", String.valueOf(buddy.getUUID()));
-            sendRoot.setAttribute("n", buddy.getUsername());
+            sendRoot.setAttribute("b", String.valueOf(thisUser.getUUID()));
+            sendRoot.setAttribute("n", thisUser.getUsername());
+            send.appendChild(sendRoot);
 
             // Send the request to the other user
             arkOneSender.SendToUser(buddy.getConnectionId(), ArkOneParser.RemoveXMLTag(send));
@@ -263,11 +266,21 @@ public class UserPlugin {
             rootElement.setAttribute("r", "0");
 
             // Append to each buddy list the other users id
-            String modifiedBuddyListOne = buddy.getRawBuddyList() + "," + thisUser.getUUID();
+            String modifiedBuddyListOne;
+            if (buddy.getRawBuddyList() == null || buddy.getRawBuddyList().equals("")) {
+                modifiedBuddyListOne = String.valueOf(thisUser.getUUID());
+            } else {
+                modifiedBuddyListOne = buddy.getRawBuddyList() + "," + thisUser.getUUID();
+            }
             buddy.setRawBuddyList(modifiedBuddyListOne);
             userService.updateUserOnServer(buddy.getConnectionId(), buddy);
 
-            String modifiedBuddyListTwo = thisUser.getRawBuddyList() + "," + buddy.getUUID();
+            String modifiedBuddyListTwo;
+            if (thisUser.getRawBuddyList() == null || thisUser.getRawBuddyList().equals("")) {
+                modifiedBuddyListTwo = String.valueOf(buddy.getUUID());
+            } else {
+                modifiedBuddyListTwo = thisUser.getRawBuddyList() + "," + buddy.getUUID();
+            }
             thisUser.setRawBuddyList(modifiedBuddyListTwo);
             userService.updateUserOnServer(thisUser.getConnectionId(), thisUser);
 
@@ -279,7 +292,7 @@ public class UserPlugin {
 
         // If accepted -> Build message to send to other original user
         Document send = dBuilder.newDocument();
-        Element sendRootElement = resp.createElement("u_abd");
+        Element sendRootElement = send.createElement("u_abd");
         if (element.getAttribute("r").equals("1")) {
             sendRootElement.setAttribute("r", "0");
             sendRootElement.setAttribute("ph", String.valueOf(thisUser.getPhoneStatus()));
@@ -297,6 +310,7 @@ public class UserPlugin {
         arkOneSender.SendToUser(buddy.getConnectionId(), ArkOneParser.RemoveXMLTag(send));
 
         rootElement.setAttribute("n", element.getAttribute("n"));
+        resp.appendChild(rootElement);
 
         // Send response
         if (accepted) {

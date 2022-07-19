@@ -68,7 +68,6 @@ public class ArkOneSender {
     public void SendToUser(UUID clientId, String message) {
         for (Connection conn : server.getConnections()) {
             if (conn.getClientIdentifier().equals(clientId)) {
-                System.out.println("Found");
                 try {
                     // Append a 0x00 to the end of the response
                     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

@@ -6,6 +6,7 @@ import com.icedberries.UBFunkeysServer.ArkOne.Plugins.UserPlugin;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
+import javagrinko.spring.tcp.Server;
 import javagrinko.spring.tcp.TcpController;
 import javagrinko.spring.tcp.TcpHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +16,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @TcpController
 public class ArkOneController implements TcpHandler {
 
     public static final String IP_ADDRESS = "127.0.0.1";
+
+    @Autowired
+    Server server;
 
     // Services
     @Autowired
@@ -83,7 +88,7 @@ public class ArkOneController implements TcpHandler {
                         responses.add(userPlugin.ChangePhoneStatus(commandInfo, connection));
                         break;
                     case "u_abd":
-                        responses.add(userPlugin.AddBuddy(commandInfo));
+                        responses.add(userPlugin.AddBuddy(commandInfo, connection));
                         break;
                     case "u_abr":
                         responses.add(userPlugin.AddBuddyResponse(commandInfo, connection));
@@ -161,13 +166,13 @@ public class ArkOneController implements TcpHandler {
 
     @Override
     public void disconnectEvent(Connection connection) {
-        User user = userService.findByConnectionId(connection.getClientIdentifier()).orElse(null);
+        User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
         if (user != null) {
             // Update the online status to offline and clear the connection ID
             user.setIsOnline(0);
             user.setChatStatus(0);
-            user.setConnectionId(null);
+            user.setConnectionId(new UUID(0L, 0L));
 
             // Update the user in the DB
             userService.save(user);
