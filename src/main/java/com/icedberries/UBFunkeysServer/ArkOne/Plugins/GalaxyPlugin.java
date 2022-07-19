@@ -70,7 +70,7 @@ public class GalaxyPlugin {
             String saveID = rootSave.getAttribute("sid");
             subElement.setAttribute("v", saveID);
         }
-        resp.appendChild(subElement);
+        rootElement.appendChild(subElement);
 
         // Build response
         return ArkOneParser.RemoveXMLTag(resp);
@@ -82,7 +82,6 @@ public class GalaxyPlugin {
 
     public String SaveProfile(Element element, Connection connection) {
         // Set the number of chunks left to save
-        //TODO: VERIFY THIS ATTRIBUTE NAME
         connection.setChunksLeft(Integer.valueOf(element.getAttribute("c")));
 
         // Clear save data

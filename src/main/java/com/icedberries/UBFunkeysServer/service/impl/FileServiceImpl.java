@@ -28,7 +28,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void save(MultipartFile file, String subDir) {
+        System.out.println("here");
         try {
+            Files.createDirectories(fileStorageLocation.resolve(subDir));
             Files.copy(file.getInputStream(), fileStorageLocation.resolve(subDir).resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
         } catch(Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
