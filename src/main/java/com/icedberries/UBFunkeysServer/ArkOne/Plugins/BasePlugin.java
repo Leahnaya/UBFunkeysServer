@@ -188,6 +188,10 @@ public class BasePlugin {
                 // Store the UUID for our connection to the server to the DB
                 user.setConnectionId(connectionId);
 
+                // Set they are online now
+                user.setChatStatus(0);
+                user.setIsOnline(1);
+
                 // Save to local map and update DB
                 userService.updateUserOnServer(connectionId, user);
             }

@@ -63,8 +63,16 @@ public class User {
 
     // Buddy Lists
     @Column(name = "buddyList")
-    private String rawBuddyList;
+    private String rawBuddyList = "";
 
     // Connection ID to send data to from other Users
-    private java.util.UUID connectionId;
+    private String connectionId = "";
+
+    public java.util.UUID getConnectionId() {
+        return java.util.UUID.fromString(connectionId);
+    }
+
+    public void setConnectionId(java.util.UUID newUUID) {
+        connectionId = newUUID.toString();
+    }
 }

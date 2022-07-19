@@ -375,7 +375,12 @@ public class UserPlugin {
             } else {
                 buddy.setRawBuddyList("");
             }
-            userService.updateUserOnServer(buddy.getConnectionId(), buddy);
+            if (buddy.getIsOnline() == 1) {
+                userService.updateUserOnServer(buddy.getConnectionId(), buddy);
+            } else {
+                userService.save(buddy);
+            }
+
 
             ArrayList<String> buddyList2 = new ArrayList<>(Arrays.asList(thisUser.getRawBuddyList().split(",")));
             buddyList2.remove(String.valueOf(buddy.getUUID()));

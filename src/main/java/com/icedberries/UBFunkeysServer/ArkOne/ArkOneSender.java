@@ -30,6 +30,10 @@ public class ArkOneSender {
 
     public void SendStatusUpdate(String statusHeader, String shortHeader, String status, Integer userUUID)
             throws ParserConfigurationException, TransformerException {
+        // No need to announce with no buddies
+        if (userService.getBuddyList(userUUID) == null) {
+            return;
+        }
         ArrayList<String> buddyList = new ArrayList<>(Arrays.asList(userService.getBuddyList(userUUID).split(",")));
 
         for (String buddy : buddyList) {
@@ -63,7 +67,7 @@ public class ArkOneSender {
 
     public void SendToUser(UUID clientId, String message) {
         for (Connection conn : server.getConnections()) {
-            if (conn.getClientIdentifier() == clientId) {
+            if (conn.getClientIdentifier().equals(clientId)) {
                 System.out.println("Found");
                 try {
                     // Append a 0x00 to the end of the response

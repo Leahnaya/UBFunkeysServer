@@ -166,6 +166,7 @@ public class ArkOneController implements TcpHandler {
         if (user != null) {
             // Update the online status to offline and clear the connection ID
             user.setIsOnline(0);
+            user.setChatStatus(0);
             user.setConnectionId(null);
 
             // Update the user in the DB
