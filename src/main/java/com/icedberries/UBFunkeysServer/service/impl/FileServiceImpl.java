@@ -36,9 +36,10 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Resource load(String filename) {
+    public Resource load(String path) {
         try {
-            Resource resource = new UrlResource(fileStorageLocation.toUri());
+            Path file = fileStorageLocation.resolve(path);
+            Resource resource = new UrlResource(file.toUri());
 
             if (resource.exists() || resource.isReadable()) {
                 return resource;
@@ -47,6 +48,18 @@ public class FileServiceImpl implements FileService {
             }
         } catch(MalformedURLException e) {
             throw new RuntimeException("Error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Boolean fileExists(String path) {
+        try {
+            Path file = fileStorageLocation.resolve(path);
+            Resource resource = new UrlResource(file.toUri());
+
+            return resource.exists() || resource.isReadable();
+        } catch(MalformedURLException e) {
+            return false;
         }
     }
 }

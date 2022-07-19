@@ -7,5 +7,7 @@ public interface FileService {
 
     void save(MultipartFile file, String subDir);
 
-    Resource load(String filename);
+    Resource load(String path);
+
+    Boolean fileExists(String path);
 }

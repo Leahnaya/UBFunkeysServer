@@ -3,9 +3,12 @@ package com.icedberries.UBFunkeysServer.ArkOne.Plugins;
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.service.FileService;
 import javagrinko.spring.tcp.Connection;
+import javagrinko.spring.tcp.Server;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
@@ -16,17 +19,57 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Service
 public class GalaxyPlugin {
 
     @Autowired
+    Server server;
+
+    @Autowired
     FileService fileService;
 
-    public String LoadProfileVersion() {
-        //TODO: IMPLEMENT THIS AFTER PROFILE SAVING
-        return "<h7_0><lpv /></h7_0>";
+    public String LoadProfileVersion(Connection connection) throws ParserConfigurationException, IOException,
+            SAXException, TransformerException {
+        // Start of response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document resp = dBuilder.newDocument();
+        Element rootElement = resp.createElement("h7_0");
+        resp.appendChild(rootElement);
+
+        Element subElement = resp.createElement("lpv");
+
+        // Check if this user has a save
+        if (fileService.fileExists(server.getConnectedUsers().get(connection.getClientIdentifier()).getUsername() + "/profile")) {
+            Resource resource = fileService.load(server.getConnectedUsers().get(connection.getClientIdentifier()).getUsername() + "/profile");
+
+            // Load their save to a string
+            String content;
+            try (Reader reader = new InputStreamReader(resource.getInputStream(), UTF_8)) {
+                content = FileCopyUtils.copyToString(reader);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            // Parse the current save
+            Document save = dBuilder.parse(new InputSource(new StringReader(content)));
+            save.getDocumentElement().normalize();
+            Element rootSave = (Element)save.getFirstChild();
+
+            String saveID = rootSave.getAttribute("sid");
+            subElement.setAttribute("v", saveID);
+        }
+        resp.appendChild(subElement);
+
+        // Build response
+        return ArkOneParser.RemoveXMLTag(resp);
     }
 
     public String VersionStatisticsRequest() {
@@ -87,5 +130,19 @@ public class GalaxyPlugin {
 
         // Build response
         return ArkOneParser.RemoveXMLTag(resp);
+    }
+
+    public String LoadProfile(Connection connection) {
+        Resource resource = fileService.load(server.getConnectedUsers().get(connection.getClientIdentifier()).getUsername() + "/profile");
+
+        // Load their save to a string
+        String content;
+        try (Reader reader = new InputStreamReader(resource.getInputStream(), UTF_8)) {
+            content = FileCopyUtils.copyToString(reader);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        return "<h7_0>" + content + "</h7_0>";
     }
 }
