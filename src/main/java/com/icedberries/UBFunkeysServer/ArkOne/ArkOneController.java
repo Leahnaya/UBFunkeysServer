@@ -117,9 +117,9 @@ public class ArkOneController implements TcpHandler {
                     case "lp":
                         responses.add(galaxyPlugin.LoadProfile(connection));
                         break;
-                    //case "gls":
-                        //responses.add(galaxyPlugin.GetLeaderboardStats());
-                       // break;
+                    case "gls":
+                        responses.add(galaxyPlugin.GetLeaderboardStats(commandInfo, connection));
+                        break;
 
                     // Plugin 10 (Trunk)
 

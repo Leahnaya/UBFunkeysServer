@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -23,6 +25,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -144,5 +148,97 @@ public class GalaxyPlugin {
         }
 
         return "<h7_0>" + content + "</h7_0>";
+    }
+
+    public String GetLeaderboardStats(Element element, Connection connection) throws ParserConfigurationException,
+            TransformerException, IOException, SAXException {
+        //TODO - When we get multiplayer working, get Most Played (MULTI) added
+
+        Integer category = Integer.valueOf(element.getAttribute("id"));
+
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document resp = dBuilder.newDocument();
+        Element rootElement = resp.createElement("h7_0");
+        resp.appendChild(rootElement);
+
+        Element glsElement = resp.createElement("gls");
+        glsElement.setAttribute("id", String.valueOf(category));
+        rootElement.appendChild(glsElement);
+
+        Element recordsElement = resp.createElement("records");
+        recordsElement.setAttribute("id", String.valueOf(category));
+        glsElement.appendChild(recordsElement);
+
+        Resource resource = fileService.load(server.getConnectedUsers().get(connection.getClientIdentifier()).getUsername() + "/profile");
+
+        // Load their save to a string
+        String content;
+        try (Reader reader = new InputStreamReader(resource.getInputStream(), UTF_8)) {
+            content = FileCopyUtils.copyToString(reader);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        Document profile = dBuilder.parse(new InputSource(new StringReader(content)));
+        profile.getDocumentElement().normalize();
+        switch(category) {
+            case 1:
+                Node gameNodes = findChildNodeByName(profile.getChildNodes(), "profile/statistics/games/game");
+                for (int i = 0; i < gameNodes.getChildNodes().getLength(); i++) {
+                    Element record = resp.createElement("record");
+
+                    Element child = (Element)gameNodes.getChildNodes().item(i);
+                    record.setAttribute("id", child.getAttribute("id"));
+                    record.setAttribute("sp", child.getAttribute("count"));
+
+                    recordsElement.appendChild(record);
+                }
+                break;
+            case 2:
+                Node itemNodes = findChildNodeByName(profile.getChildNodes(), "profile/menu/items/item");
+                for (int i = 0; i < itemNodes.getChildNodes().getLength(); i++) {
+                    Element record = resp.createElement("record");
+
+                    Element child = (Element)itemNodes.getChildNodes().item(i);
+                    record.setAttribute("id", child.getAttribute("id"));
+                    record.setAttribute("c", child.getAttribute("total"));
+
+                    recordsElement.appendChild(record);
+                }
+                break;
+            default:
+                System.out.println("[ArkOne][ERROR] gls had a category value of: " + category);
+                break;
+        }
+
+        return ArkOneParser.RemoveXMLTag(resp);
+    }
+
+    private Node findChildNodeByName(NodeList nList, String nodePath) {
+        ArrayList<String> path = new ArrayList<>(Arrays.asList(nodePath.split("/")));
+
+        if (path.size() <= 0) {
+            return null;
+        }
+
+        if (path.size() > 1) {
+            for (int i = 0; i < nList.getLength(); i++) {
+                Node node = nList.item(i);
+                if (node.getNodeName().equals(path.get(0))) {
+                    path.remove(0);
+                    return findChildNodeByName(node.getChildNodes(), String.join("/", path));
+                }
+            }
+        } else {
+            for (int i = 0; i < nList.getLength(); i++) {
+                Node node = nList.item(i);
+                if (node.getNodeName().equals(path.get(0))) {
+                    return node;
+                }
+            }
+        }
+        // Nothing found
+        return null;
     }
 }
