@@ -62,25 +62,21 @@ public class ArkOneSender {
     }
 
     public void SendToUser(UUID clientId, String message) {
-        Connection connection = null;
-
         for (Connection conn : server.getConnections()) {
             if (conn.getClientIdentifier() == clientId) {
-                connection = conn;
-            }
-        }
+                try {
+                    // Append a 0x00 to the end of the response
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    outputStream.write(message.getBytes());
+                    outputStream.write((byte)0x00);
 
-        if (connection != null) {
-            try {
-                // Append a 0x00 to the end of the response
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                outputStream.write(message.getBytes());
-                outputStream.write((byte)0x00);
+                    conn.send(outputStream.toByteArray());
 
-                connection.send(outputStream.toByteArray());
-            } catch (IOException e) {
-                System.out.println("[ArkOne][ERROR] Failed to send message to user [" + clientId + "]: " + message);
-                e.printStackTrace();
+                    return;
+                } catch (IOException e) {
+                    System.out.println("[ArkOne][ERROR] Failed to send message to user [" + clientId + "]: " + message);
+                    e.printStackTrace();
+                }
             }
         }
     }

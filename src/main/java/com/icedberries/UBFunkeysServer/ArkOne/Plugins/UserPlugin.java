@@ -144,6 +144,7 @@ public class UserPlugin {
     public String ChangeChatStatus(Element element, Connection connection) throws ParserConfigurationException, TransformerException {
         User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
+        // Update the chat status
         user.setChatStatus(Integer.valueOf(element.getAttribute("s")));
         userService.updateUserOnServer(connection, user);
 
@@ -162,14 +163,12 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
-    public String ChangePhoneStatus(Element element) throws ParserConfigurationException, TransformerException {
-        //TODO: VERIFY THE ATTRIBUTE NAME
-        User user = userService.findByUUID(Integer.valueOf(element.getAttribute("id"))).orElse(null);
+    public String ChangePhoneStatus(Element element, Connection connection) throws ParserConfigurationException, TransformerException {
+        User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
-        //TODO: VERIFY THE ATTRIBUTE NAME
-        // Update that user's chat status
+        // Update the phone status
         user.setPhoneStatus(Integer.valueOf(element.getAttribute("ph")));
-        userService.save(user);
+        userService.updateUserOnServer(connection, user);
 
         // Build the response
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();

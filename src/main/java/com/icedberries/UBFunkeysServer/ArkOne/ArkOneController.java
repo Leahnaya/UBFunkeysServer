@@ -81,7 +81,7 @@ public class ArkOneController implements TcpHandler {
                         responses.add(userPlugin.ChangeChatStatus(commandInfo, connection));
                         break;
                     case "u_cph":
-                        responses.add(userPlugin.ChangePhoneStatus(commandInfo));
+                        responses.add(userPlugin.ChangePhoneStatus(commandInfo, connection));
                         break;
                     case "p":
                         responses.add(userPlugin.Ping());
