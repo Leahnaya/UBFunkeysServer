@@ -1,6 +1,7 @@
 package com.icedberries.UBFunkeysServer.service;
 
 import com.icedberries.UBFunkeysServer.domain.User;
+import javagrinko.spring.tcp.Connection;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -20,4 +21,9 @@ public interface UserService {
     String getBuddyList(Integer uuid);
 
     Optional<User> findByConnectionId(UUID connectionId);
+
+    User updateUserOnServer(Connection connection, User user);
+    User updateUserOnServer(UUID uuid, User user);
+
+    void removeUserFromServer(Connection connection);
 }

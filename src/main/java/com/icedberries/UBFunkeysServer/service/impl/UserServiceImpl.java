@@ -3,7 +3,10 @@ package com.icedberries.UBFunkeysServer.service.impl;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.repository.UserRepository;
 import com.icedberries.UBFunkeysServer.service.UserService;
+import javagrinko.spring.tcp.Connection;
+import javagrinko.spring.tcp.Server;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -14,6 +17,9 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     public final UserRepository userRepository;
+
+    @Autowired
+    Server server;
 
 
     @Override
@@ -49,5 +55,25 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<User> findByConnectionId(UUID connectionId) {
         return userRepository.findByConnectionId(connectionId);
+    }
+
+    @Override
+    public User updateUserOnServer(Connection connection, User user) {
+        return updateUserOnServer(connection.getClientIdentifier(), user);
+    }
+
+    @Override
+    public User updateUserOnServer(UUID uuid, User user) {
+        User returnedUser = save(user);
+
+        // Save user to local map
+        server.addConnectedUser(uuid, returnedUser);
+
+        return returnedUser;
+    }
+
+    @Override
+    public void removeUserFromServer(Connection connection) {
+        server.removeConnectedUser(connection.getClientIdentifier());
     }
 }

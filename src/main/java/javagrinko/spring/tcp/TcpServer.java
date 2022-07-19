@@ -1,5 +1,6 @@
 package javagrinko.spring.tcp;
 
+import com.icedberries.UBFunkeysServer.domain.User;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,6 +22,8 @@ public class TcpServer implements Server, Connection.Listener {
     private volatile boolean isStop;
     private List<Connection> connections = new CopyOnWriteArrayList<>();
     private List<Connection.Listener> listeners = new CopyOnWriteArrayList<>();
+
+    private HashMap<UUID, User> connectedUsers = new HashMap<>();
 
     public void setPort(Integer port) {
         try {
@@ -67,6 +71,25 @@ public class TcpServer implements Server, Connection.Listener {
     @Override
     public void addListener(Connection.Listener listener) {
         listeners.add(listener);
+    }
+
+    @Override
+    public HashMap<UUID, User> getConnectedUsers() {
+        return connectedUsers;
+    }
+
+    @Override
+    public void addConnectedUser(UUID uuid, User user) {
+        if (connectedUsers.containsKey(uuid)) {
+            connectedUsers.replace(uuid, user);
+        } else {
+            connectedUsers.put(uuid, user);
+        }
+    }
+
+    @Override
+    public void removeConnectedUser(UUID uuid) {
+        connectedUsers.remove(uuid);
     }
 
     @Override

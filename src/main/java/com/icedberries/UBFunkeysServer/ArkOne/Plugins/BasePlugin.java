@@ -4,6 +4,7 @@ import com.icedberries.UBFunkeysServer.ArkOne.ArkOneController;
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
+import javagrinko.spring.tcp.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,9 @@ import java.util.UUID;
 
 @Service
 public class BasePlugin {
+
+    @Autowired
+    Server server;
 
     @Autowired
     private UserService userService;
@@ -183,7 +187,9 @@ public class BasePlugin {
 
                 // Store the UUID for our connection to the server to the DB
                 user.setConnectionId(connectionId);
-                userService.save(user);
+
+                // Save to local map and update DB
+                userService.updateUserOnServer(connectionId, user);
             }
         }
 

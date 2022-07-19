@@ -75,10 +75,10 @@ public class ArkOneController implements TcpHandler {
                         responses.add(userPlugin.RegisterUser(commandInfo));
                         break;
                     case "u_gbl":
-                        responses.add(userPlugin.GetBuddyList(commandInfo));
+                        responses.add(userPlugin.GetBuddyList(connection));
                         break;
                     case "u_ccs":
-                        responses.add(userPlugin.ChangeChatStatus(commandInfo));
+                        responses.add(userPlugin.ChangeChatStatus(commandInfo, connection));
                         break;
                     case "u_cph":
                         responses.add(userPlugin.ChangePhoneStatus(commandInfo));
@@ -145,6 +145,9 @@ public class ArkOneController implements TcpHandler {
 
             // Update the user in the DB
             userService.save(user);
+
+            // Remove user from HashMap
+            userService.removeUserFromServer(connection);
 
             // Notify other users that they went offline
             try {

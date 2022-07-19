@@ -4,6 +4,8 @@ import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneSender;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
+import javagrinko.spring.tcp.Connection;
+import javagrinko.spring.tcp.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,10 +18,12 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.UUID;
 
 @Service
 public class UserPlugin {
+
+    @Autowired
+    Server server;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -78,9 +82,8 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
-    public String GetBuddyList(Element element) throws ParserConfigurationException, TransformerException {
-        //TODO: VERIFY THE ATTRIBUTE NAME
-        User user = userService.findByUUID(Integer.valueOf(element.getAttribute("id"))).orElse(null);
+    public String GetBuddyList(Connection connection) throws ParserConfigurationException, TransformerException {
+        User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
         // Start of response
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -91,7 +94,8 @@ public class UserPlugin {
         doc.appendChild(rootElement);
 
         // User should never be null here but check just in case
-        if (user == null) {
+        // Also return if no buddies
+        if (user == null || user.getRawBuddyList() == null) {
             return ArkOneParser.RemoveXMLTag(doc);
         }
 
@@ -126,7 +130,7 @@ public class UserPlugin {
 
         // The client doesn't set online status.  So the server sets it when it gets all the user's buddies
         user.setIsOnline(1);
-        userService.save(user);
+        userService.updateUserOnServer(connection, user);
 
         // Let all your buddies know you are online
         if (buddyList.size() > 0) {
@@ -137,14 +141,11 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
-    public String ChangeChatStatus(Element element) throws ParserConfigurationException, TransformerException {
-        //TODO: VERIFY THE ATTRIBUTE NAME
-        User user = userService.findByUUID(Integer.valueOf(element.getAttribute("id"))).orElse(null);
+    public String ChangeChatStatus(Element element, Connection connection) throws ParserConfigurationException, TransformerException {
+        User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
-        //TODO: VERIFY THE ATTRIBUTE NAME
-        // Update that user's chat status
         user.setChatStatus(Integer.valueOf(element.getAttribute("s")));
-        userService.save(user);
+        userService.updateUserOnServer(connection, user);
 
         // Build the response
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
