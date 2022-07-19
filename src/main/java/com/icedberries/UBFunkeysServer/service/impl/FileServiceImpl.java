@@ -13,6 +13,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Service
 public class FileServiceImpl implements FileService {
@@ -26,9 +27,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void save(MultipartFile file) {
+    public void save(MultipartFile file, String subDir) {
         try {
-            Files.copy(file.getInputStream(), fileStorageLocation.resolve(file.getOriginalFilename()));
+            Files.copy(file.getInputStream(), fileStorageLocation.resolve(subDir).resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
         } catch(Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }

@@ -13,6 +13,11 @@ public interface Connection {
     void close() throws IOException;
     UUID getClientIdentifier();
     void setClientIdentifier(UUID newId);
+    Integer getChunksLeft();
+    void setChunksLeft(Integer chunksLeft);
+
+    String getSaveData();
+    void setSaveData(String saveData);
     interface Listener {
         void messageReceived(Connection connection, byte[] bytes)
                 throws InvocationTargetException, IllegalAccessException;

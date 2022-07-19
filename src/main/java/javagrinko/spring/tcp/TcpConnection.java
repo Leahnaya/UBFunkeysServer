@@ -20,8 +20,9 @@ public class TcpConnection implements Connection {
     private OutputStream outputStream;
     private Socket socket;
     private List<Listener> listeners = new CopyOnWriteArrayList<>();
-
     private UUID clientIdentifier = null;
+    private Integer chunksLeft = 0;
+    private String saveData = "";
 
     TcpConnection(Socket socket) {
         this.socket = socket;
@@ -105,5 +106,25 @@ public class TcpConnection implements Connection {
     @Override
     public void setClientIdentifier(UUID newId) {
         this.clientIdentifier = newId;
+    }
+
+    @Override
+    public Integer getChunksLeft() {
+        return chunksLeft;
+    }
+
+    @Override
+    public void setChunksLeft(Integer chunksLeft) {
+        this.chunksLeft = chunksLeft;
+    }
+
+    @Override
+    public String getSaveData() {
+        return saveData;
+    }
+
+    @Override
+    public void setSaveData(String saveData) {
+        this.saveData = saveData;
     }
 }

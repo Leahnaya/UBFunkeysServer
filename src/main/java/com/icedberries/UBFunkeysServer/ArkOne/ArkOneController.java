@@ -95,6 +95,12 @@ public class ArkOneController implements TcpHandler {
                     case "vsu":
                         responses.add(galaxyPlugin.VersionStatisticsRequest());
                         break;
+                    case "sp":
+                        responses.add(galaxyPlugin.SaveProfile(commandInfo, connection));
+                        break;
+                    case "spp":
+                        responses.add(galaxyPlugin.SaveProfilePart(commandInfo, connection));
+                        break;
 
                     // Plugin 10 (Trunk)
 
