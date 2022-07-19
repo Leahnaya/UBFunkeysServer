@@ -18,6 +18,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.UUID;
 
 @Service
 public class UserPlugin {
@@ -303,6 +304,116 @@ public class UserPlugin {
         } else {
             return "<notneeded/>";
         }
+    }
+
+    public String SendPrivateMessage(Element element) throws ParserConfigurationException, TransformerException {
+        // Start of response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document resp = dBuilder.newDocument();
+        Element rootElement = resp.createElement("u_spm");
+        rootElement.setAttribute("r", "0");
+        rootElement.setAttribute("m", element.getAttribute("m"));
+        rootElement.setAttribute("t", element.getAttribute("t"));
+        rootElement.setAttribute("f", element.getAttribute("f"));
+        resp.appendChild(rootElement);
+
+        UUID connID = UUID.randomUUID();
+
+        User buddy = userService.findByUUID(Integer.valueOf(element.getAttribute("t"))).orElse(null);
+
+        // If the user is online, grab their connection id to send the message
+        if (buddy.getIsOnline() == 1) {
+            connID = buddy.getConnectionId();
+        }
+
+        arkOneSender.SendToUser(connID, ArkOneParser.RemoveXMLTag(resp));
+
+        return ArkOneParser.RemoveXMLTag(resp);
+    }
+
+    public String DeleteBuddy(Element element, Connection connection) throws ParserConfigurationException, TransformerException {
+        User buddy = userService.findByUUID(Integer.valueOf(element.getAttribute("b"))).orElse(null);
+        User thisUser = server.getConnectedUsers().get(connection.getClientIdentifier());
+
+        boolean fail = false;
+
+        // Start of response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document respFail = dBuilder.newDocument();
+        Element rootElement = respFail.createElement("u_dbd");
+
+        if (buddy.getUsername().equals("") || buddy.getUsername().equals("GUESTUSER")) {
+            fail = true;
+            rootElement.setAttribute("r", "2");
+        }
+        rootElement.setAttribute("u", String.valueOf(thisUser.getUUID()));
+        rootElement.setAttribute("b", element.getAttribute("b"));
+        respFail.appendChild(rootElement);
+
+        if (fail) {
+            return ArkOneParser.RemoveXMLTag(respFail);
+        } else {
+            // Send a remove message to the buddy if they are online
+            if (buddy.getIsOnline() == 1) {
+                Document send = dBuilder.newDocument();
+                Element sendRoot = send.createElement("u_dbr");
+                sendRoot.setAttribute("b", String.valueOf(thisUser.getUUID()));
+                sendRoot.setAttribute("n", thisUser.getUsername());
+                send.appendChild(sendRoot);
+
+                // Send
+                arkOneSender.SendToUser(buddy.getConnectionId(), ArkOneParser.RemoveXMLTag(send));
+            }
+
+            // Remove the users from each other's buddy list
+            ArrayList<String> buddyList = new ArrayList<>(Arrays.asList(buddy.getRawBuddyList().split(",")));
+            buddyList.remove(String.valueOf(thisUser.getUUID()));
+            if (buddyList.size() > 0) {
+                buddy.setRawBuddyList(String.join(",", buddyList));
+            } else {
+                buddy.setRawBuddyList("");
+            }
+            userService.updateUserOnServer(buddy.getConnectionId(), buddy);
+
+            ArrayList<String> buddyList2 = new ArrayList<>(Arrays.asList(thisUser.getRawBuddyList().split(",")));
+            buddyList2.remove(String.valueOf(buddy.getUUID()));
+            if (buddyList2.size() > 0) {
+                thisUser.setRawBuddyList(String.join(",", buddyList2));
+            } else {
+                thisUser.setRawBuddyList("");
+            }
+            userService.updateUserOnServer(thisUser.getConnectionId(), thisUser);
+
+            Document resp = dBuilder.newDocument();
+            Element respRoot = resp.createElement("u_dbd");
+            respRoot.setAttribute("r", "0");
+            respRoot.setAttribute("u", String.valueOf(thisUser.getUUID()));
+            respRoot.setAttribute("b", element.getAttribute("b"));
+            resp.appendChild(respRoot);
+
+            // Return response
+            return ArkOneParser.RemoveXMLTag(resp);
+        }
+    }
+
+    public String DeleteBuddyResponse(Element element, Connection connection) throws ParserConfigurationException,
+            TransformerException {
+        User thisUser = server.getConnectedUsers().get(connection.getClientIdentifier());
+
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document resp = dBuilder.newDocument();
+        Element rootElement = resp.createElement("u_dbd");
+
+        rootElement.setAttribute("r", "0");
+        rootElement.setAttribute("u", String.valueOf(thisUser.getUUID()));
+        rootElement.setAttribute("b", element.getAttribute("b"));
+
+        resp.appendChild(rootElement);
+
+        return ArkOneParser.RemoveXMLTag(resp);
     }
 
     public String Ping() {

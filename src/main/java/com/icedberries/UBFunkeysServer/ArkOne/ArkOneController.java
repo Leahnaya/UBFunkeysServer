@@ -88,6 +88,15 @@ public class ArkOneController implements TcpHandler {
                     case "u_abr":
                         responses.add(userPlugin.AddBuddyResponse(commandInfo, connection));
                         break;
+                    case "u_spm":
+                        responses.add(userPlugin.SendPrivateMessage(commandInfo));
+                        break;
+                    case "u_dbd":
+                        responses.add(userPlugin.DeleteBuddy(commandInfo, connection));
+                        break;
+                    case "u_dbr":
+                        responses.add(userPlugin.DeleteBuddyResponse(commandInfo, connection));
+                        break;
                     case "p":
                         responses.add(userPlugin.Ping());
                         break;
@@ -108,6 +117,9 @@ public class ArkOneController implements TcpHandler {
                     case "lp":
                         responses.add(galaxyPlugin.LoadProfile(connection));
                         break;
+                    //case "gls":
+                        //responses.add(galaxyPlugin.GetLeaderboardStats());
+                       // break;
 
                     // Plugin 10 (Trunk)
 
