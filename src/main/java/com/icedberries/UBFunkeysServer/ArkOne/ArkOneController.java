@@ -6,7 +6,6 @@ import com.icedberries.UBFunkeysServer.ArkOne.Plugins.UserPlugin;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
-import javagrinko.spring.tcp.Server;
 import javagrinko.spring.tcp.TcpController;
 import javagrinko.spring.tcp.TcpHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +81,12 @@ public class ArkOneController implements TcpHandler {
                         break;
                     case "u_cph":
                         responses.add(userPlugin.ChangePhoneStatus(commandInfo, connection));
+                        break;
+                    case "u_abd":
+                        responses.add(userPlugin.AddBuddy(commandInfo));
+                        break;
+                    case "u_abr":
+                        responses.add(userPlugin.AddBuddyResponse(commandInfo, connection));
                         break;
                     case "p":
                         responses.add(userPlugin.Ping());

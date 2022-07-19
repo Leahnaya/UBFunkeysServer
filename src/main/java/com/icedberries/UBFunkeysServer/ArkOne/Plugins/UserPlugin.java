@@ -185,6 +185,126 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(doc);
     }
 
+    public String AddBuddy(Element element) throws ParserConfigurationException, TransformerException {
+        // Try to get a buddy with the username passed
+        User buddy = userService.findByUsername(element.getAttribute("n")).orElse(null);
+
+        boolean fail = false;
+        boolean isAlreadyBuddy = false;
+
+        if (buddy != null && buddy.getRawBuddyList() != null) {
+            // Check if existing buddies
+            ArrayList<String> buddyList = new ArrayList<>(Arrays.asList(buddy.getRawBuddyList().split(",")));
+            for (String buddyItem : buddyList) {
+                if (buddyItem.equals(String.valueOf(buddy.getUUID()))) {
+                    isAlreadyBuddy = true;
+                    break;
+                }
+            }
+        }
+
+        // Start of response for failure
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document resp = dBuilder.newDocument();
+        Element rootElement = resp.createElement("u_abd");
+
+        if (buddy == null) {
+            rootElement.setAttribute("r", "2");
+            fail = true;
+        } else if (buddy.getIsOnline() == 0) {
+            rootElement.setAttribute("r", "5");
+            fail = true;
+        } else if (isAlreadyBuddy) {
+            rootElement.setAttribute("r", "3");
+            fail = true;
+        } else if (buddy.getUsername().equals("") || buddy.getUsername().equals("GUESTUSER")) {
+            rootElement.setAttribute("r", "2");
+            fail = true;
+        }
+
+        resp.appendChild(rootElement);
+
+        // Check if failed
+        if (fail) {
+            return ArkOneParser.RemoveXMLTag(resp);
+        } else {
+            Document send = dBuilder.newDocument();
+            Element sendRoot = send.createElement("u_abr");
+            sendRoot.setAttribute("b", String.valueOf(buddy.getUUID()));
+            sendRoot.setAttribute("n", buddy.getUsername());
+
+            // Send the request to the other user
+            arkOneSender.SendToUser(buddy.getConnectionId(), ArkOneParser.RemoveXMLTag(send));
+
+            // Return a value
+            return "<notneeded/>";
+        }
+    }
+
+    public String AddBuddyResponse(Element element, Connection connection) throws ParserConfigurationException,
+            TransformerException {
+        boolean accepted = false;
+
+        User buddy = userService.findByUsername(element.getAttribute("n")).orElse(null);
+        User thisUser = server.getConnectedUsers().get(connection.getClientIdentifier());
+
+        // Start of response
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document resp = dBuilder.newDocument();
+        Element rootElement = resp.createElement("u_abd");
+
+        // If accepted -> Build response and update DB
+        if (element.getAttribute("r").equals("1")) {
+            accepted = true;
+
+            rootElement.setAttribute("r", "0");
+
+            // Append to each buddy list the other users id
+            String modifiedBuddyListOne = buddy.getRawBuddyList() + "," + thisUser.getUUID();
+            buddy.setRawBuddyList(modifiedBuddyListOne);
+            userService.updateUserOnServer(buddy.getConnectionId(), buddy);
+
+            String modifiedBuddyListTwo = thisUser.getRawBuddyList() + "," + buddy.getUUID();
+            thisUser.setRawBuddyList(modifiedBuddyListTwo);
+            userService.updateUserOnServer(thisUser.getConnectionId(), thisUser);
+
+            rootElement.setAttribute("b", String.valueOf(buddy.getUUID()));
+            rootElement.setAttribute("ph", String.valueOf(buddy.getPhoneStatus()));
+            rootElement.setAttribute("s", String.valueOf(buddy.getChatStatus()));
+            rootElement.setAttribute("o", String.valueOf(buddy.getIsOnline()));
+        }
+
+        // If accepted -> Build message to send to other original user
+        Document send = dBuilder.newDocument();
+        Element sendRootElement = resp.createElement("u_abd");
+        if (element.getAttribute("r").equals("1")) {
+            sendRootElement.setAttribute("r", "0");
+            sendRootElement.setAttribute("ph", String.valueOf(thisUser.getPhoneStatus()));
+            sendRootElement.setAttribute("s", String.valueOf(thisUser.getChatStatus()));
+            sendRootElement.setAttribute("o", String.valueOf(thisUser.getIsOnline()));
+        } else {
+            sendRootElement.setAttribute("r", "4");
+        }
+
+        sendRootElement.setAttribute("b", String.valueOf(thisUser.getUUID()));
+        sendRootElement.setAttribute("n", thisUser.getUsername());
+        send.appendChild(sendRootElement);
+
+        // Send to that user
+        arkOneSender.SendToUser(buddy.getConnectionId(), ArkOneParser.RemoveXMLTag(send));
+
+        rootElement.setAttribute("n", element.getAttribute("n"));
+
+        // Send response
+        if (accepted) {
+            return ArkOneParser.RemoveXMLTag(resp);
+        } else {
+            return "<notneeded/>";
+        }
+    }
+
     public String Ping() {
         return "<p t=\"30\" />";
     }
