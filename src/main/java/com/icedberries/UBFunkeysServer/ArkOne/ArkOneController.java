@@ -2,6 +2,7 @@ package com.icedberries.UBFunkeysServer.ArkOne;
 
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.BasePlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.GalaxyPlugin;
+import com.icedberries.UBFunkeysServer.ArkOne.Plugins.TrunkPlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.UserPlugin;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
@@ -42,6 +43,9 @@ public class ArkOneController implements TcpHandler {
 
     @Autowired
     GalaxyPlugin galaxyPlugin;
+
+    @Autowired
+    TrunkPlugin trunkPlugin;
 
     @Override
     public void receiveData(Connection connection, byte[] data) {
@@ -127,6 +131,12 @@ public class ArkOneController implements TcpHandler {
                         break;
 
                     // Plugin 10 (Trunk)
+                    case "gua":
+                        responses.add(trunkPlugin.GetUserAssets());
+                        break;
+                    case "glb":
+                        responses.add(trunkPlugin.GetLootBalance());
+                        break;
 
                     // Catch Unhandled Commands
                     default:
