@@ -3,6 +3,7 @@ package com.icedberries.UBFunkeysServer.service;
 import com.icedberries.UBFunkeysServer.domain.User;
 import javagrinko.spring.tcp.Connection;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,4 +27,6 @@ public interface UserService {
     User updateUserOnServer(UUID uuid, User user);
 
     void removeUserFromServer(Connection connection);
+
+    List<User> getOnlineUsers();
 }

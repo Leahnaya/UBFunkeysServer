@@ -11,15 +11,20 @@ import javagrinko.spring.tcp.Server;
 import javagrinko.spring.tcp.TcpController;
 import javagrinko.spring.tcp.TcpHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @TcpController
+@EnableScheduling
 public class ArkOneController implements TcpHandler {
 
     public static final String IP_ADDRESS = "127.0.0.1";
@@ -107,7 +112,7 @@ public class ArkOneController implements TcpHandler {
                         responses.add(userPlugin.DeleteBuddyResponse(commandInfo, connection));
                         break;
                     case "p":
-                        responses.add(userPlugin.Ping());
+                        responses.add(userPlugin.Ping(connection));
                         break;
 
                     // Plugin 7 (Galaxy)
@@ -195,6 +200,33 @@ public class ArkOneController implements TcpHandler {
                 arkOneSender.SendStatusUpdate("u_cos", "o", "0", user.getUUID());
             } catch(Exception e) {
                 // Do nothing since the client is disconnecting anyway
+            }
+        }
+    }
+
+    // Run this every 60 seconds to check for inactive online users
+    @Scheduled(fixedRate = 60000)
+    public void setOfflineInactiveUsers() {
+        List<User> onlineUsers = userService.getOnlineUsers();
+
+        // If there is at least one user in the list
+        if (onlineUsers.size() > 0) {
+            for (User user : onlineUsers) {
+                // Make sure the user has a last ping else turn them offline
+                // A ping should be set on login
+                if (user.getLastPing() == null) {
+                    user.setIsOnline(0);
+                    userService.save(user);
+                    continue;
+                }
+
+                // Calculate how many milliseconds since last ping/login
+                long difference = Math.abs(Duration.between(user.getLastPing(), LocalDateTime.now()).toMillis());
+                if (difference > 60000) {
+                    // USer has been online for more than 60 seconds without a new ping - set them offline
+                    user.setIsOnline(0);
+                    userService.save(user);
+                }
             }
         }
     }

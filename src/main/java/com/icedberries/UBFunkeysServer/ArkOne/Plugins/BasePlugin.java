@@ -15,6 +15,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -183,17 +184,27 @@ public class BasePlugin {
                 responseCode = 4;
             } else {
                 // Login success
-                uuid = String.valueOf(user.getUUID());
 
-                // Store the UUID for our connection to the server to the DB
-                user.setConnectionId(connectionId);
+                // Check if user already logged in
+                if (user.getIsOnline() == 1) {
+                    responseCode = 2;
+                } else {
+                    // User not in game
+                    uuid = String.valueOf(user.getUUID());
 
-                // Set they are online now
-                user.setChatStatus(0);
-                user.setIsOnline(1);
+                    // Store the UUID for our connection to the server to the DB
+                    user.setConnectionId(connectionId);
 
-                // Save to local map and update DB
-                userService.updateUserOnServer(connectionId, user);
+                    // Set their last ping time to now
+                    user.setLastPing(LocalDateTime.now());
+
+                    // Set they are online now
+                    user.setChatStatus(0);
+                    user.setIsOnline(1);
+
+                    // Save to local map and update DB
+                    userService.updateUserOnServer(connectionId, user);
+                }
             }
         }
 

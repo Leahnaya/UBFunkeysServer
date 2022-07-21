@@ -6,6 +6,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,4 +28,7 @@ public interface UserRepository extends CrudRepository<User, Integer> {
 
     @Query("select user from User user where user.connectionId = :connectionId")
     Optional<User> findByConnectionId(@Param("connectionId") UUID connectionId);
+
+    @Query("select user from User user where user.isOnline = 1")
+    List<User> getAllOnlineUsers();
 }

@@ -16,6 +16,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
@@ -435,7 +436,13 @@ public class UserPlugin {
         return ArkOneParser.RemoveXMLTag(resp);
     }
 
-    public String Ping() {
+    public String Ping(Connection connection) {
+        User user = server.getConnectedUsers().get(connection.getClientIdentifier());
+
+        user.setLastPing(LocalDateTime.now());
+
+        userService.updateUserOnServer(connection, user);
+
         return "<p t=\"30\" />";
     }
 }

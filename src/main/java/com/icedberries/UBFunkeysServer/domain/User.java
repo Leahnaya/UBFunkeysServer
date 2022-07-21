@@ -13,6 +13,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -67,6 +68,9 @@ public class User {
 
     // Connection ID to send data to from other Users
     private String connectionId = "";
+
+    // Last ping time
+    private LocalDateTime lastPing;
 
     public java.util.UUID getConnectionId() {
         return java.util.UUID.fromString(connectionId);
