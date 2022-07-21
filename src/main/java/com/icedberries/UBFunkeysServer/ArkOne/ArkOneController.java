@@ -29,6 +29,8 @@ public class ArkOneController implements TcpHandler {
 
     public static final String IP_ADDRESS = "127.0.0.1";
 
+    private boolean firstOfflineScheduledRun = true;
+
     @Autowired
     Server server;
 
@@ -214,6 +216,11 @@ public class ArkOneController implements TcpHandler {
             for (User user : onlineUsers) {
                 // Make sure the user has a last ping else turn them offline
                 // A ping should be set on login
+                if (firstOfflineScheduledRun) {
+                    user.setIsOnline(0);
+                    userService.save(user);
+                    continue;
+                }
                 if (user.getLastPing() == null) {
                     user.setIsOnline(0);
                     userService.save(user);
@@ -228,6 +235,10 @@ public class ArkOneController implements TcpHandler {
                     userService.save(user);
                 }
             }
+        }
+
+        if (firstOfflineScheduledRun) {
+            firstOfflineScheduledRun = false;
         }
     }
 }

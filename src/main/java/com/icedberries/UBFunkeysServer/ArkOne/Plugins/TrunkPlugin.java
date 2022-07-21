@@ -9,7 +9,7 @@ public class TrunkPlugin {
 
     public String GetUserAssets() {
         //TODO: IMPLEMENT ME
-        return "<gua><items /><familiars /><moods /><jammers /></gua>";
+        return "<h10_0><gua></gua></h10_0>";
     }
 
     public String GetLootBalance() {

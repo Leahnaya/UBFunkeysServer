@@ -183,7 +183,7 @@ public class GalaxyPlugin {
         profile.getDocumentElement().normalize();
         switch(category) {
             case 1:
-                Node gameNodes = findChildNodeByName(profile.getChildNodes(), "profile/statistics/games/game");
+                Node gameNodes = findChildNodeByName(profile.getChildNodes(), "profile/statistics/games");
                 for (int i = 0; i < gameNodes.getChildNodes().getLength(); i++) {
                     Element record = resp.createElement("record");
 
@@ -195,7 +195,7 @@ public class GalaxyPlugin {
                 }
                 break;
             case 2:
-                Node itemNodes = findChildNodeByName(profile.getChildNodes(), "profile/menu/items/item");
+                Node itemNodes = findChildNodeByName(profile.getChildNodes(), "profile/menu/items");
                 for (int i = 0; i < itemNodes.getChildNodes().getLength(); i++) {
                     Element record = resp.createElement("record");
 
