@@ -144,6 +144,12 @@ public class ArkOneController implements TcpHandler {
                     case "glb":
                         responses.add(trunkPlugin.GetLootBalance());
                         break;
+                    case "gfl":
+                        responses.add(trunkPlugin.GetFamiliarsList());
+                        break;
+                    case "bf":
+                        responses.add(trunkPlugin.BuyFamiliar(commandInfo));
+                        break;
 
                     // Catch Unhandled Commands
                     default:
