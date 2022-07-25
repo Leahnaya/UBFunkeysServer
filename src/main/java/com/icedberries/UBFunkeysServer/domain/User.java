@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -71,6 +72,14 @@ public class User {
 
     // Last ping time
     private LocalDateTime lastPing;
+
+    // Transaction Count
+    private Integer transactionCount;
+
+    // Transaction History
+    @Column(columnDefinition = "MEDIUMTEXT")
+    @Type(type = "org.hibernate.type.TextType")
+    private String transactionHistory;
 
     public java.util.UUID getConnectionId() {
         return java.util.UUID.fromString(connectionId);

@@ -4,6 +4,8 @@ import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.domain.Crib;
 import com.icedberries.UBFunkeysServer.service.CribService;
 import com.icedberries.UBFunkeysServer.service.EmailService;
+import com.icedberries.UBFunkeysServer.service.FileService;
+import com.icedberries.UBFunkeysServer.util.RDFUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,17 +31,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.io.StringWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RestController
 public class GalaxyServer {
@@ -48,6 +46,9 @@ public class GalaxyServer {
 
     @Autowired
     private CribService cribService;
+
+    @Autowired
+    FileService fileService;
 
     /**
      * This is only used as part of the updater to pass files to the client as requested via URL path
@@ -136,9 +137,15 @@ public class GalaxyServer {
                     return saveCrib(nodes.item(0));
                 case "loadcrib":
                     return loadCrib((Element)nodes.item(0));
-            default:
-                System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                case "get_sh_levels":
+                    return getShLevels((Element)nodes.item(0));
+                case "get_level":
+                    return getLevel((Element)nodes.item(0));
+                case "add_level":
+                    return addLevel((Element)nodes.item(0));
+                default:
+                    System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         } catch (ParserConfigurationException | IOException | SAXException e) {
             System.out.println("[Galaxy][POST][ERROR] Thrown Error: ");
@@ -307,4 +314,33 @@ public class GalaxyServer {
         }
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    private ResponseEntity<String> getShLevels(Element element) throws IOException {
+        System.out.println("[Galaxy][POST] get_sh_levels request received");
+
+        //TODO: GET THE LEVELS SAVED ON THE SERVER
+
+        return new ResponseEntity<>("<get_sh_levels r=\"0\"><level n=\"\"><level_data /></level></get_sh_levels>", HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> getLevel(Element element) {
+        //TODO: DO THIS
+        return new ResponseEntity<>("<get_level r=\"0\"><level n=\"\"><level_data /></level></get_level>", HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> addLevel(Element element) {
+        //TODO: DO THIS
+        return new ResponseEntity<>("<add_level r=\"0\"><level n=\"\"><level_data /></level></add_level>", HttpStatus.OK);
+    }
+
+    /*
+    // Game to get
+    String gamePath = element.getAttribute("tnpath").replaceFirst("data/", "");
+    // Load the users file
+    Resource resource = fileService.load(gamePath + "/uglevels.rdf");
+    // Load their save to a string
+    String content = "";
+    byte[] targetArray = org.apache.commons.io.IOUtils.toByteArray(resource.getInputStream());
+    content = RDFUtil.decode(new String(targetArray, StandardCharsets.ISO_8859_1));
+    */
 }

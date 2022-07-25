@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CribServiceImpl implements CribService {
 
-    public final CribRepository cribRepository;
+    private final CribRepository cribRepository;
 
     @Override
     public Integer count() {

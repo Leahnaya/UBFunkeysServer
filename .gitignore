@@ -37,4 +37,4 @@ build/
 .vscode/
 
 ### Funkey Profiles ###
-profiles/**/*
+data/**/*

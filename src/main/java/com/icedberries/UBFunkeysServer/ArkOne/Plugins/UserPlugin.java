@@ -47,6 +47,13 @@ public class UserPlugin {
                 .password(passwordEncoder.encode(password))
                 .securityQuestion(securityQuestion)
                 .securityAnswer(passwordEncoder.encode(securityAnswer))
+                .chatStatus(0)
+                .connectionId("00000000-0000-0000-0000-000000000000")
+                .isOnline(0)
+                .phoneStatus(0)
+                .rawBuddyList("")
+                .transactionCount(0)
+                .transactionHistory("")
                 .build();
 
         // 0 - Successfully registered
@@ -117,7 +124,7 @@ public class UserPlugin {
                 if (buddyUser == null) {
                     continue;
                 }
-                //TODO: VERIFY THIS BUILDS THE XML AS EXPECTED
+
                 // Get information off their data to build a xml tag
                 Element buddyElement = doc.createElement("buddy");
                 buddyElement.setAttribute("id", String.valueOf(buddyUser.getUUID()));

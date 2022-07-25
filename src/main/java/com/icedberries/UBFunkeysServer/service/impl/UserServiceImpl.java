@@ -22,7 +22,6 @@ public class UserServiceImpl implements UserService {
     @Autowired
     Server server;
 
-
     @Override
     public Optional<User> findByUUID(Integer uuid) {
         return userRepository.findByUUID(uuid);

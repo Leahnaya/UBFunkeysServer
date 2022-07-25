@@ -12,7 +12,6 @@ import org.springframework.util.FileCopyUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -25,8 +24,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -100,7 +97,6 @@ public class GalaxyPlugin {
         resp.appendChild(rootElement);
 
         // Continue appending to the saveData
-        //TODO: VERIFY THIS ELEMENT ATTRIBUTE
         connection.setSaveData(element.getAttribute("v") + connection.getSaveData());
 
         if (connection.getChunksLeft() == 1) {
@@ -183,7 +179,7 @@ public class GalaxyPlugin {
         profile.getDocumentElement().normalize();
         switch(category) {
             case 1:
-                Node gameNodes = findChildNodeByName(profile.getChildNodes(), "profile/statistics/games");
+                Node gameNodes = ArkOneParser.findParentNodeOfPath(profile.getChildNodes(), "profile/statistics/games");
                 for (int i = 0; i < gameNodes.getChildNodes().getLength(); i++) {
                     Element record = resp.createElement("record");
 
@@ -195,7 +191,7 @@ public class GalaxyPlugin {
                 }
                 break;
             case 2:
-                Node itemNodes = findChildNodeByName(profile.getChildNodes(), "profile/menu/items");
+                Node itemNodes = ArkOneParser.findParentNodeOfPath(profile.getChildNodes(), "profile/menu/items");
                 for (int i = 0; i < itemNodes.getChildNodes().getLength(); i++) {
                     Element record = resp.createElement("record");
 
@@ -212,32 +208,5 @@ public class GalaxyPlugin {
         }
 
         return ArkOneParser.RemoveXMLTag(resp);
-    }
-
-    private Node findChildNodeByName(NodeList nList, String nodePath) {
-        ArrayList<String> path = new ArrayList<>(Arrays.asList(nodePath.split("/")));
-
-        if (path.size() <= 0) {
-            return null;
-        }
-
-        if (path.size() > 1) {
-            for (int i = 0; i < nList.getLength(); i++) {
-                Node node = nList.item(i);
-                if (node.getNodeName().equals(path.get(0))) {
-                    path.remove(0);
-                    return findChildNodeByName(node.getChildNodes(), String.join("/", path));
-                }
-            }
-        } else {
-            for (int i = 0; i < nList.getLength(); i++) {
-                Node node = nList.item(i);
-                if (node.getNodeName().equals(path.get(0))) {
-                    return node;
-                }
-            }
-        }
-        // Nothing found
-        return null;
     }
 }

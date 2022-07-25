@@ -2,6 +2,7 @@ package com.icedberries.UBFunkeysServer.ArkOne;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -67,5 +68,32 @@ public class ArkOneParser {
             return true;
         }
         return false;
+    }
+
+    public static Node findParentNodeOfPath(NodeList nList, String nodePath) {
+        ArrayList<String> path = new ArrayList<>(Arrays.asList(nodePath.split("/")));
+
+        if (path.size() <= 0) {
+            return null;
+        }
+
+        if (path.size() > 1) {
+            for (int i = 0; i < nList.getLength(); i++) {
+                Node node = nList.item(i);
+                if (node.getNodeName().equals(path.get(0))) {
+                    path.remove(0);
+                    return findParentNodeOfPath(node.getChildNodes(), String.join("/", path));
+                }
+            }
+        } else {
+            for (int i = 0; i < nList.getLength(); i++) {
+                Node node = nList.item(i);
+                if (node.getNodeName().equals(path.get(0))) {
+                    return node;
+                }
+            }
+        }
+        // Nothing found
+        return null;
     }
 }

@@ -139,7 +139,7 @@ public class ArkOneController implements TcpHandler {
 
                     // Plugin 10 (Trunk)
                     case "gua":
-                        responses.add(trunkPlugin.GetUserAssets());
+                        responses.add(trunkPlugin.GetUserAssets(connection));
                         break;
                     case "glb":
                         responses.add(trunkPlugin.GetLootBalance());
@@ -147,8 +147,14 @@ public class ArkOneController implements TcpHandler {
                     case "gfl":
                         responses.add(trunkPlugin.GetFamiliarsList());
                         break;
+                    case "gutc":
+                        responses.add(trunkPlugin.GetUserTransactionsCount(connection));
+                        break;
+                    case "gut":
+                        responses.add(trunkPlugin.GetUserTransactions(connection));
+                        break;
                     case "bf":
-                        responses.add(trunkPlugin.BuyFamiliar(commandInfo));
+                        responses.add(trunkPlugin.BuyFamiliar(commandInfo, connection));
                         break;
 
                     // Catch Unhandled Commands
