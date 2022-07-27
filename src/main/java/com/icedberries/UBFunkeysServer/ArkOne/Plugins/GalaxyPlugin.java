@@ -180,26 +180,30 @@ public class GalaxyPlugin {
         switch(category) {
             case 1:
                 Node gameNodes = ArkOneParser.findParentNodeOfPath(profile.getChildNodes(), "profile/statistics/games");
-                for (int i = 0; i < gameNodes.getChildNodes().getLength(); i++) {
-                    Element record = resp.createElement("record");
+                if (gameNodes != null) {
+                    for (int i = 0; i < gameNodes.getChildNodes().getLength(); i++) {
+                        Element record = resp.createElement("record");
 
-                    Element child = (Element)gameNodes.getChildNodes().item(i);
-                    record.setAttribute("id", child.getAttribute("id"));
-                    record.setAttribute("sp", child.getAttribute("count"));
+                        Element child = (Element) gameNodes.getChildNodes().item(i);
+                        record.setAttribute("id", child.getAttribute("id"));
+                        record.setAttribute("sp", child.getAttribute("count"));
 
-                    recordsElement.appendChild(record);
+                        recordsElement.appendChild(record);
+                    }
                 }
                 break;
             case 2:
                 Node itemNodes = ArkOneParser.findParentNodeOfPath(profile.getChildNodes(), "profile/menu/items");
-                for (int i = 0; i < itemNodes.getChildNodes().getLength(); i++) {
-                    Element record = resp.createElement("record");
+                if (itemNodes != null) {
+                    for (int i = 0; i < itemNodes.getChildNodes().getLength(); i++) {
+                        Element record = resp.createElement("record");
 
-                    Element child = (Element)itemNodes.getChildNodes().item(i);
-                    record.setAttribute("id", child.getAttribute("id"));
-                    record.setAttribute("c", child.getAttribute("total"));
+                        Element child = (Element) itemNodes.getChildNodes().item(i);
+                        record.setAttribute("id", child.getAttribute("id"));
+                        record.setAttribute("c", child.getAttribute("total"));
 
-                    recordsElement.appendChild(record);
+                        recordsElement.appendChild(record);
+                    }
                 }
                 break;
             default:
