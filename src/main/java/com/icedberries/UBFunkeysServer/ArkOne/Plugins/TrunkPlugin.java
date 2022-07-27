@@ -81,13 +81,12 @@ public class TrunkPlugin {
 
                 String id = child.getAttribute("id");
                 String p = child.getAttribute("start");
-                String cnt = child.getAttribute("time");
+                Integer c = Integer.valueOf(child.getAttribute("time"));
 
-                // cnt -> time
+                // c -> time (needs to be divided by 60)
                 // p -> start
                 // id -> item id
-                //TODO: FINISH FIXING THIS
-                response.append("<f id=\"" + id + "\" p=\"" + (27645298/60) + "\" c=\"" + 720 + "\" />");
+                response.append("<f id=\"" + id + "\" p=\"" + p + "\" c=\"" + (c / 60) + "\" />");
             }
         }
 
@@ -156,6 +155,11 @@ public class TrunkPlugin {
         } else {
             return "<h10_0><gut></gut></h10_0>";
         }
+    }
+
+    public String AssetParam() {
+        // Doesn't seem to be needed so we can just respond with an empty xml tag
+        return "<h10_0><asp /></h10_0>";
     }
 
     public String BuyFamiliar(Element element, Connection connection) {

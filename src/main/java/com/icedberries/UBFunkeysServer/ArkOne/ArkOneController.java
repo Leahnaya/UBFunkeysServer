@@ -153,6 +153,9 @@ public class ArkOneController implements TcpHandler {
                     case "gut":
                         responses.add(trunkPlugin.GetUserTransactions(connection));
                         break;
+                    case "asp":
+                        responses.add(trunkPlugin.AssetParam());
+                        break;
                     case "bf":
                         responses.add(trunkPlugin.BuyFamiliar(commandInfo, connection));
                         break;
