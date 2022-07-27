@@ -4,11 +4,9 @@ import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.DatabaseSetup.TrunkData;
 import com.icedberries.UBFunkeysServer.domain.Familiar;
 import com.icedberries.UBFunkeysServer.domain.Jammer;
+import com.icedberries.UBFunkeysServer.domain.Mood;
 import com.icedberries.UBFunkeysServer.domain.User;
-import com.icedberries.UBFunkeysServer.service.FamiliarService;
-import com.icedberries.UBFunkeysServer.service.FileService;
-import com.icedberries.UBFunkeysServer.service.JammerService;
-import com.icedberries.UBFunkeysServer.service.UserService;
+import com.icedberries.UBFunkeysServer.service.*;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +36,8 @@ public class TrunkPlugin {
 
     private enum PurchaseType {
         FAMILIAR,
-        JAMMER
+        JAMMER,
+        MOOD
     }
 
     @Autowired
@@ -54,11 +53,13 @@ public class TrunkPlugin {
     JammerService jammerService;
 
     @Autowired
+    MoodService moodService;
+
+    @Autowired
     UserService userService;
 
     public String GetUserAssets(Connection connection) throws ParserConfigurationException, IOException, SAXException {
-        //TODO: IMPLEMENT ITEMS | MOODS
-        // Moods - Tag looks like this: <m id="80041a" />
+        //TODO: IMPLEMENT ITEMS | CLEANING STATIONS | ROOMS
 
         // Append the starting tags
         StringBuilder response = new StringBuilder();
@@ -106,6 +107,17 @@ public class TrunkPlugin {
             if (c > 0) {
                 response.append("<j id=\"" + TrunkData.JAMMER_RID + "\" p=\"" + p + "\" c=\"" + c + "\" />");
             }
+
+            // Append the moods
+            Node moodParentNode = ArkOneParser.findParentNodeOfPath(profile.getChildNodes(), "profile/trunk/moods");
+            for (int i = 0; i < moodParentNode.getChildNodes().getLength(); i++) {
+                Element child = (Element) moodParentNode.getChildNodes().item(i);
+
+                String id = child.getAttribute("id");
+
+                // id -> item id
+                response.append("<m id=\"" + id + "\" />");
+            }
         }
 
         // Append the ending tags
@@ -142,7 +154,7 @@ public class TrunkPlugin {
         return stringBuilder.toString();
     }
 
-    public String GetJammerList() {
+    public String GetJammersList() {
 
         // Get all the jammers
         List<Jammer> jammers = jammerService.findAll();
@@ -151,7 +163,7 @@ public class TrunkPlugin {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<h10_0><gjl>");
 
-        // Iterate over the items in the familiars list to add them to the response
+        // Iterate over the items in the jammers list to add them to the response
         for (Jammer jammer : jammers) {
             stringBuilder.append("<j rid=\"" + jammer.getRid() + "\" id=\"" + jammer.getId() + "\" c=\""
                     + jammer.getCost() + "\" q=\"" + jammer.getQty() + "\" d=\"\" />");
@@ -159,6 +171,28 @@ public class TrunkPlugin {
 
         // Add closing tags
         stringBuilder.append("</gjl></h10_0>");
+
+        // Return the list
+        return stringBuilder.toString();
+    }
+
+    public String GetMoodsList() {
+
+        // Get all the moods
+        List<Mood> moods = moodService.findAll();
+
+        // Start to build the response
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h10_0><gml>");
+
+        // Iterate over the items in the moods list to add them to the response
+        for (Mood mood : moods) {
+            stringBuilder.append("<m rid=\"" + mood.getRid() + "\" id=\"" + mood.getId() + "\" c=\""
+                    + mood.getCost() + "\" q=\"1\" d=\"\" />");
+        }
+
+        // Add closing tags
+        stringBuilder.append("</gml></h10_0>");
 
         // Return the list
         return stringBuilder.toString();
@@ -240,6 +274,14 @@ public class TrunkPlugin {
         return "<h10_0><bj id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
     }
 
+    public String BuyMood(Element element, Connection connection) {
+        // Save this transaction to the DB
+        PostTransaction(connection, PurchaseType.MOOD, Integer.valueOf(element.getAttribute("id")));
+
+        // We always return LOOT_BALANCE so players are never charged for these items
+        return "<h10_0><bm id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
+    }
+
     public void PostTransaction(Connection connection, PurchaseType purchaseType, Integer itemId) {
         User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
@@ -257,6 +299,9 @@ public class TrunkPlugin {
             case JAMMER:
                 cost = jammerService.getCostById(itemId);
                 break;
+            case MOOD:
+                cost = moodService.getCostById(itemId);
+                break;
         }
 
         // Get the rid of the item
@@ -267,6 +312,9 @@ public class TrunkPlugin {
                 break;
             case JAMMER:
                 rid = jammerService.getRidById(itemId);
+                break;
+            case MOOD:
+                rid = moodService.getRidById(itemId);
                 break;
         }
 
