@@ -147,6 +147,9 @@ public class ArkOneController implements TcpHandler {
                     case "gfl":
                         responses.add(trunkPlugin.GetFamiliarsList());
                         break;
+                    case "gjl":
+                        responses.add(trunkPlugin.GetJammerList());
+                        break;
                     case "gutc":
                         responses.add(trunkPlugin.GetUserTransactionsCount(connection));
                         break;
@@ -154,10 +157,13 @@ public class ArkOneController implements TcpHandler {
                         responses.add(trunkPlugin.GetUserTransactions(connection));
                         break;
                     case "asp":
-                        responses.add(trunkPlugin.AssetParam());
+                        responses.add(trunkPlugin.AssetParam(commandInfo, connection));
                         break;
                     case "bf":
                         responses.add(trunkPlugin.BuyFamiliar(commandInfo, connection));
+                        break;
+                    case "bj":
+                        responses.add(trunkPlugin.BuyJammer(commandInfo, connection));
                         break;
 
                     // Catch Unhandled Commands

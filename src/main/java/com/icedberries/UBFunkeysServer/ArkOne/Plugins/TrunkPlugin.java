@@ -1,10 +1,13 @@
 package com.icedberries.UBFunkeysServer.ArkOne.Plugins;
 
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
+import com.icedberries.UBFunkeysServer.DatabaseSetup.TrunkData;
 import com.icedberries.UBFunkeysServer.domain.Familiar;
+import com.icedberries.UBFunkeysServer.domain.Jammer;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.FamiliarService;
 import com.icedberries.UBFunkeysServer.service.FileService;
+import com.icedberries.UBFunkeysServer.service.JammerService;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
@@ -34,7 +37,8 @@ public class TrunkPlugin {
     private final Integer LOOT_BALANCE = 2500;
 
     private enum PurchaseType {
-        FAMILIAR
+        FAMILIAR,
+        JAMMER
     }
 
     @Autowired
@@ -47,10 +51,13 @@ public class TrunkPlugin {
     FamiliarService familiarService;
 
     @Autowired
+    JammerService jammerService;
+
+    @Autowired
     UserService userService;
 
     public String GetUserAssets(Connection connection) throws ParserConfigurationException, IOException, SAXException {
-        //TODO: IMPLEMENT ITEMS | MOODS | JAMMERS
+        //TODO: IMPLEMENT ITEMS | MOODS
         // Moods - Tag looks like this: <m id="80041a" />
 
         // Append the starting tags
@@ -88,6 +95,17 @@ public class TrunkPlugin {
                 // id -> item id
                 response.append("<f id=\"" + id + "\" p=\"" + p + "\" c=\"" + (c / 60) + "\" />");
             }
+
+            /* Append the jammers
+             * NOTE: We have to store this on the profile since the user doesn't properly save jammer
+             * counts to the profile data
+             */
+            User user = server.getConnectedUsers().get(connection.getClientIdentifier());
+            Integer p = user.getJammersUsed() != null ? user.getJammersUsed() : 0;
+            Integer c = user.getJammersTotal() != null ? user.getJammersTotal() : 0;
+            if (c > 0) {
+                response.append("<j id=\"" + TrunkData.JAMMER_RID + "\" p=\"" + p + "\" c=\"" + c + "\" />");
+            }
         }
 
         // Append the ending tags
@@ -112,13 +130,35 @@ public class TrunkPlugin {
 
         // Iterate over the items in the familiars list to add them to the response
         for (Familiar familiar : familiars) {
-            stringBuilder.append("<f rid=\"" + familiar.getId() + "\" id=\"" + familiar.getId() + "\" c=\""
+            stringBuilder.append("<f rid=\"" + familiar.getRid() + "\" id=\"" + familiar.getId() + "\" c=\""
                     + familiar.getCost() + "\" dc=\"" + familiar.getDiscountedCost() + "\" h=\""
                     + familiar.getDuration() + "\" d=\"\" />");
         }
 
         // Add closing tags
         stringBuilder.append("</gfl></h10_0>");
+
+        // Return the list
+        return stringBuilder.toString();
+    }
+
+    public String GetJammerList() {
+
+        // Get all the jammers
+        List<Jammer> jammers = jammerService.findAll();
+
+        // Start to build the response
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h10_0><gjl>");
+
+        // Iterate over the items in the familiars list to add them to the response
+        for (Jammer jammer : jammers) {
+            stringBuilder.append("<j rid=\"" + jammer.getRid() + "\" id=\"" + jammer.getId() + "\" c=\""
+                    + jammer.getCost() + "\" q=\"" + jammer.getQty() + "\" d=\"\" />");
+        }
+
+        // Add closing tags
+        stringBuilder.append("</gjl></h10_0>");
 
         // Return the list
         return stringBuilder.toString();
@@ -157,20 +197,50 @@ public class TrunkPlugin {
         }
     }
 
-    public String AssetParam() {
-        // Doesn't seem to be needed so we can just respond with an empty xml tag
+    public String AssetParam(Element element, Connection connection) {
+        /* This method would be used to update the server profile data for when familiars are started (setting start time)
+         * Or when you use a jammer
+         *
+         * For familiars we can trust the profile data saved and load from those
+         * For jammers, the profile doesn't update properly so we need to update the jammer used count when received
+         */
+
+        // Check for id equal to the jammer rid
+        if (element.getAttribute("id").equals("80014a")) {
+            User user = server.getConnectedUsers().get(connection.getClientIdentifier());
+            Integer newUsed = Integer.valueOf(element.getAttribute("p"));
+            user.setJammersUsed(newUsed);
+            userService.updateUserOnServer(connection, user);
+        }
+
+        // Return this regardless of outcome (I don't believe a response is read from this)
         return "<h10_0><asp /></h10_0>";
     }
 
     public String BuyFamiliar(Element element, Connection connection) {
         // Save this transaction to the DB
-        PostTransaction(connection, PurchaseType.FAMILIAR, element.getAttribute("id"));
+        PostTransaction(connection, PurchaseType.FAMILIAR, Integer.valueOf(element.getAttribute("id")));
 
         // We always return LOOT_BALANCE so players are never charged for these items
         return "<h10_0><bf id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
     }
 
-    public void PostTransaction(Connection connection, PurchaseType purchaseType, String itemId) {
+    public String BuyJammer(Element element, Connection connection) {
+        // Save this transaction to the DB
+        PostTransaction(connection, PurchaseType.JAMMER, Integer.valueOf(element.getAttribute("id")));
+
+        // Increase the amount of jammers a player has in their account
+        User user = server.getConnectedUsers().get(connection.getClientIdentifier());
+        Integer qtyBought = jammerService.getQtyById(Integer.valueOf(element.getAttribute("id")));
+        Integer currentTotal = user.getJammersTotal() != null ? user.getJammersTotal() : 0;
+        user.setJammersTotal(currentTotal + qtyBought);
+        userService.updateUserOnServer(connection, user);
+
+        // We always return LOOT_BALANCE so players are never charged for these items
+        return "<h10_0><bj id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
+    }
+
+    public void PostTransaction(Connection connection, PurchaseType purchaseType, Integer itemId) {
         User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
         // Get the date for this transaction
@@ -184,10 +254,24 @@ public class TrunkPlugin {
             case FAMILIAR:
                 cost = familiarService.getCostById(itemId);
                 break;
+            case JAMMER:
+                cost = jammerService.getCostById(itemId);
+                break;
+        }
+
+        // Get the rid of the item
+        String rid = "";
+        switch(purchaseType) {
+            case FAMILIAR:
+                rid = familiarService.getRidById(itemId);
+                break;
+            case JAMMER:
+                rid = jammerService.getRidById(itemId);
+                break;
         }
 
         // Create a transaction xml tag
-        String transaction = "<t id=\"" + itemId + "\" rid=\"" + itemId + "\" d=\"" + date + "\" c=\""
+        String transaction = "<t id=\"" + itemId + "\" rid=\"" + rid + "\" d=\"" + date + "\" c=\""
                 + cost + "\" b=\"" + LOOT_BALANCE + "\" />";
 
         // Append to the user's transaction history

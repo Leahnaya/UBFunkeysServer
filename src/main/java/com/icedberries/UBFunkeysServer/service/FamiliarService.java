@@ -7,11 +7,13 @@ import java.util.Optional;
 
 public interface FamiliarService {
 
-    Optional<Familiar> findById(String id);
+    Optional<Familiar> findByRid(String rid);
 
     Familiar save(Familiar familiar);
 
     List<Familiar> findAll();
 
-    Integer getCostById(String id);
+    Integer getCostById(Integer id);
+
+    String getRidById(Integer id);
 }

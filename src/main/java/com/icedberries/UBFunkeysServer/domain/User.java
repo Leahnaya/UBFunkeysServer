@@ -81,6 +81,10 @@ public class User {
     @Type(type = "org.hibernate.type.TextType")
     private String transactionHistory;
 
+    private Integer jammersTotal;
+
+    private Integer jammersUsed;
+
     public java.util.UUID getConnectionId() {
         return java.util.UUID.fromString(connectionId);
     }

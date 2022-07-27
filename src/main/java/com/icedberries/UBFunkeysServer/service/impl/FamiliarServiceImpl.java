@@ -16,8 +16,8 @@ public class FamiliarServiceImpl implements FamiliarService {
     private final FamiliarRepository familiarRepository;
 
     @Override
-    public Optional<Familiar> findById(String id) {
-        return familiarRepository.findById(id);
+    public Optional<Familiar> findByRid(String rid) {
+        return familiarRepository.findByRid(rid);
     }
 
     @Override
@@ -31,7 +31,12 @@ public class FamiliarServiceImpl implements FamiliarService {
     }
 
     @Override
-    public Integer getCostById(String id) {
+    public Integer getCostById(Integer id) {
         return familiarRepository.getCostById(id);
+    }
+
+    @Override
+    public String getRidById(Integer id) {
+        return familiarRepository.getRidById(id);
     }
 }

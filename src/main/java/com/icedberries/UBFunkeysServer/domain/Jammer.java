@@ -12,8 +12,8 @@ import javax.persistence.Table;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Familiars")
-public class Familiar {
+@Table(name = "Jammers")
+public class Jammer {
 
     // DB ID
     @Id
@@ -24,8 +24,5 @@ public class Familiar {
 
     private Integer cost;
 
-    private Integer discountedCost;
-
-    // This is the number of hours it lasts
-    private Integer duration;
+    private Integer qty;
 }

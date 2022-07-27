@@ -54,6 +54,8 @@ public class UserPlugin {
                 .rawBuddyList("")
                 .transactionCount(0)
                 .transactionHistory("")
+                .jammersUsed(0)
+                .jammersTotal(0)
                 .build();
 
         // 0 - Successfully registered
