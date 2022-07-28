@@ -153,6 +153,9 @@ public class ArkOneController implements TcpHandler {
                     case "gml":
                         responses.add(trunkPlugin.GetMoodsList());
                         break;
+                    case "gcl":
+                        responses.add(trunkPlugin.GetCleaningsList());
+                        break;
                     case "gutc":
                         responses.add(trunkPlugin.GetUserTransactionsCount(connection));
                         break;
@@ -170,6 +173,9 @@ public class ArkOneController implements TcpHandler {
                         break;
                     case "bm":
                         responses.add(trunkPlugin.BuyMood(commandInfo, connection));
+                        break;
+                    case "bc":
+                        responses.add(trunkPlugin.BuyCleaning(commandInfo, connection));
                         break;
 
                     // Catch Unhandled Commands

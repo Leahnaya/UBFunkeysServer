@@ -12,8 +12,8 @@ import javax.persistence.Table;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Moods")
-public class Mood {
+@Table(name = "Cleanings")
+public class Cleaning {
 
     // DB ID
     @Id

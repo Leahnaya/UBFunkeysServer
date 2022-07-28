@@ -1,8 +1,10 @@
 package com.icedberries.UBFunkeysServer.DatabaseSetup;
 
+import com.icedberries.UBFunkeysServer.domain.Cleaning;
 import com.icedberries.UBFunkeysServer.domain.Familiar;
 import com.icedberries.UBFunkeysServer.domain.Jammer;
 import com.icedberries.UBFunkeysServer.domain.Mood;
+import com.icedberries.UBFunkeysServer.service.CleaningService;
 import com.icedberries.UBFunkeysServer.service.FamiliarService;
 import com.icedberries.UBFunkeysServer.service.JammerService;
 import com.icedberries.UBFunkeysServer.service.MoodService;
@@ -26,6 +28,9 @@ public class TrunkData {
     @Autowired
     MoodService moodService;
 
+    @Autowired
+    CleaningService cleaningService;
+
     // Familiars
     private final List<String> familiarIds = Arrays.asList("80036a", "80035a", "80034a", "80033a", "80032a", "80031a", "80030a",
             "80029a", "80028a", "80027a", "80026a", "80025a", "80017a", "80016a", "80015a", "80007a", "80006a",
@@ -43,6 +48,10 @@ public class TrunkData {
     private final List<String> moodIds = Arrays.asList("80041a", "80040a", "80039a", "80038a", "80037a", "80024a", "80023a",
             "80022a", "80021a", "80020a", "80019a", "80018a", "80013a", "80012a", "80011a", "80010a", "80009a", "80008a");
     private final Integer MOOD_COST = 100;
+
+    // Cleanings
+    private final List<String> cleaningIds = Arrays.asList("70021a");
+    private final Integer CLEANING_COST = 100;
 
     @EventListener(ApplicationReadyEvent.class)
     public void insertFamiliars() {
@@ -118,6 +127,32 @@ public class TrunkData {
 
                 // Save it to the db
                 moodService.save(newMood);
+            }
+
+            // Increment id
+            idNum++;
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void insertCleanings() {
+        // Iterate over the cleaning ids
+        int idNum = 0;
+        for (String id : cleaningIds) {
+            // Attempt to get from the DB
+            Cleaning cleaning = cleaningService.findByRid(id).orElse(null);
+
+            // Only insert if the data is null
+            if (cleaning == null) {
+                // Build a new mood to insert
+                Cleaning newCleaning = Cleaning.builder()
+                        .id(idNum)
+                        .rid(id)
+                        .cost(MOOD_COST)
+                        .build();
+
+                // Save it to the db
+                cleaningService.save(newCleaning);
             }
 
             // Increment id

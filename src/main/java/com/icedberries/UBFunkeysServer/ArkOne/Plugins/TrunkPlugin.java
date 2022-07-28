@@ -2,10 +2,7 @@ package com.icedberries.UBFunkeysServer.ArkOne.Plugins;
 
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.DatabaseSetup.TrunkData;
-import com.icedberries.UBFunkeysServer.domain.Familiar;
-import com.icedberries.UBFunkeysServer.domain.Jammer;
-import com.icedberries.UBFunkeysServer.domain.Mood;
-import com.icedberries.UBFunkeysServer.domain.User;
+import com.icedberries.UBFunkeysServer.domain.*;
 import com.icedberries.UBFunkeysServer.service.*;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
@@ -37,7 +34,8 @@ public class TrunkPlugin {
     private enum PurchaseType {
         FAMILIAR,
         JAMMER,
-        MOOD
+        MOOD,
+        CLEANING
     }
 
     @Autowired
@@ -54,6 +52,9 @@ public class TrunkPlugin {
 
     @Autowired
     MoodService moodService;
+
+    @Autowired
+    CleaningService cleaningService;
 
     @Autowired
     UserService userService;
@@ -132,7 +133,6 @@ public class TrunkPlugin {
     }
 
     public String GetFamiliarsList() {
-
         // Get all the familiars
         List<Familiar> familiars = familiarService.findAll();
 
@@ -155,7 +155,6 @@ public class TrunkPlugin {
     }
 
     public String GetJammersList() {
-
         // Get all the jammers
         List<Jammer> jammers = jammerService.findAll();
 
@@ -177,7 +176,6 @@ public class TrunkPlugin {
     }
 
     public String GetMoodsList() {
-
         // Get all the moods
         List<Mood> moods = moodService.findAll();
 
@@ -193,6 +191,27 @@ public class TrunkPlugin {
 
         // Add closing tags
         stringBuilder.append("</gml></h10_0>");
+
+        // Return the list
+        return stringBuilder.toString();
+    }
+
+    public String GetCleaningsList() {
+        // Get all the cleaning stations
+        List<Cleaning> cleanings = cleaningService.findAll();
+
+        // Start to build the response
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h10_0><gcl>");
+
+        // Iterate over the items in the moods list to add them to the response
+        for (Cleaning cleaning : cleanings) {
+            stringBuilder.append("<c rid=\"" + cleaning.getRid() + "\" id=\"" + cleaning.getId() + "\" c=\""
+                    + cleaning.getCost() + "\" q=\"1\" d=\"\" />");
+        }
+
+        // Add closing tags
+        stringBuilder.append("</gcl></h10_0>");
 
         // Return the list
         return stringBuilder.toString();
@@ -282,6 +301,14 @@ public class TrunkPlugin {
         return "<h10_0><bm id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
     }
 
+    public String BuyCleaning(Element element, Connection connection) {
+        // Save this transaction to the DB
+        PostTransaction(connection, PurchaseType.CLEANING, Integer.valueOf(element.getAttribute("id")));
+
+        // We always return LOOT_BALANCE so players are never charged for these items
+        return "<h10_0><bc id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
+    }
+
     public void PostTransaction(Connection connection, PurchaseType purchaseType, Integer itemId) {
         User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
@@ -302,6 +329,9 @@ public class TrunkPlugin {
             case MOOD:
                 cost = moodService.getCostById(itemId);
                 break;
+            case CLEANING:
+                cost = cleaningService.getCostById(itemId);
+                break;
         }
 
         // Get the rid of the item
@@ -315,6 +345,9 @@ public class TrunkPlugin {
                 break;
             case MOOD:
                 rid = moodService.getRidById(itemId);
+                break;
+            case CLEANING:
+                rid = cleaningService.getRidById(itemId);
                 break;
         }
 
