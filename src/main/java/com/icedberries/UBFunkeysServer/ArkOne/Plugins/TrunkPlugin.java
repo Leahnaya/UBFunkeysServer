@@ -35,7 +35,8 @@ public class TrunkPlugin {
         FAMILIAR,
         JAMMER,
         MOOD,
-        CLEANING
+        CLEANING,
+        ITEM
     }
 
     @Autowired
@@ -57,11 +58,12 @@ public class TrunkPlugin {
     CleaningService cleaningService;
 
     @Autowired
+    ItemService itemService;
+
+    @Autowired
     UserService userService;
 
     public String GetUserAssets(Connection connection) throws ParserConfigurationException, IOException, SAXException {
-        //TODO: IMPLEMENT ITEMS | CLEANING STATIONS | ROOMS
-
         // Append the starting tags
         StringBuilder response = new StringBuilder();
         response.append("<h10_0><gua>");
@@ -217,6 +219,33 @@ public class TrunkPlugin {
         return stringBuilder.toString();
     }
 
+    public String GetItemsList() {
+        // Get all the items
+        List<Item> items = itemService.findAll();
+
+        // Start to build the response
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<h10_0><gil>");
+
+        // Iterate over the items in the moods list to add them to the response
+        for (Item item : items) {
+            stringBuilder.append("<i rid=\"" + item.getRid() + "\" id=\"" + item.getId() + "\" c=\""
+                    + item.getCost() + "\" q=\"1\" d=\"\" />");
+        }
+
+        // Add closing tags
+        stringBuilder.append("</gil></h10_0>");
+
+        // Return the list
+        return stringBuilder.toString();
+    }
+
+    public String GetSplashList() {
+        // This is used for setting popup menus for specials on items
+        // We don't really need this functional since all the players will have infinite loot anyways
+        return "<h10_0><gsl /></h10_0>";
+    }
+
     public String GetUserTransactionsCount(Connection connection) {
         User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
@@ -309,6 +338,14 @@ public class TrunkPlugin {
         return "<h10_0><bc id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
     }
 
+    public String BuyItem(Element element, Connection connection) {
+        // Save this transaction to the DB
+        PostTransaction(connection, PurchaseType.ITEM, Integer.valueOf(element.getAttribute("id")));
+
+        // We always return LOOT_BALANCE so players are never charged for these items
+        return "<h10_0><bi id=\"" + element.getAttribute("id") + "\" b=\"" + LOOT_BALANCE + "\" /></h10_0>";
+    }
+
     public void PostTransaction(Connection connection, PurchaseType purchaseType, Integer itemId) {
         User user = server.getConnectedUsers().get(connection.getClientIdentifier());
 
@@ -332,6 +369,9 @@ public class TrunkPlugin {
             case CLEANING:
                 cost = cleaningService.getCostById(itemId);
                 break;
+            case ITEM:
+                cost = itemService.getCostById(itemId);
+                break;
         }
 
         // Get the rid of the item
@@ -348,6 +388,9 @@ public class TrunkPlugin {
                 break;
             case CLEANING:
                 rid = cleaningService.getRidById(itemId);
+                break;
+            case ITEM:
+                rid = itemService.getRidById(itemId);
                 break;
         }
 
