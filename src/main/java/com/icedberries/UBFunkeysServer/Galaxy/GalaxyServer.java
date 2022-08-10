@@ -2,10 +2,9 @@ package com.icedberries.UBFunkeysServer.Galaxy;
 
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.domain.Crib;
-import com.icedberries.UBFunkeysServer.service.CribService;
-import com.icedberries.UBFunkeysServer.service.EmailService;
-import com.icedberries.UBFunkeysServer.service.FileService;
-import com.icedberries.UBFunkeysServer.util.RDFUtil;
+import com.icedberries.UBFunkeysServer.domain.Level;
+import com.icedberries.UBFunkeysServer.domain.User;
+import com.icedberries.UBFunkeysServer.service.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +12,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.FileCopyUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -32,11 +27,15 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RestController
 public class GalaxyServer {
@@ -48,7 +47,13 @@ public class GalaxyServer {
     private CribService cribService;
 
     @Autowired
-    FileService fileService;
+    private LevelService levelService;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private FileService fileService;
 
     /**
      * This is only used as part of the updater to pass files to the client as requested via URL path
@@ -116,7 +121,7 @@ public class GalaxyServer {
     @PostMapping("/")
     public ResponseEntity<String> GalaxyPostResponse(@RequestBody String xmlBody) {
         // Log the request
-        System.out.println("[Galaxy][POST] New Request: " + xmlBody);
+        System.out.println("[Galaxy][POST] Request: " + xmlBody);
 
         try {
             // Parse the xml body of the request
@@ -130,23 +135,41 @@ public class GalaxyServer {
             String command = nodes.item(0).getNodeName();
 
             // Handle based on the root element
+            ResponseEntity<String> response;
             switch(command) {
                 case "postcard":
-                    return sendPostcard((Element)nodes.item(0));
+                    response = sendPostcard((Element)nodes.item(0));
+                    break;
                 case "savecrib":
-                    return saveCrib(nodes.item(0));
+                    response = saveCrib(nodes.item(0));
+                    break;
                 case "loadcrib":
-                    return loadCrib((Element)nodes.item(0));
+                    response = loadCrib((Element)nodes.item(0));
+                    break;
                 case "get_sh_levels":
-                    return getShLevels((Element)nodes.item(0));
+                    response = getShLevels((Element)nodes.item(0));
+                    break;
                 case "get_level":
-                    return getLevel((Element)nodes.item(0));
+                    response = getLevel((Element)nodes.item(0));
+                    break;
                 case "add_level":
-                    return addLevel((Element)nodes.item(0));
+                    response = addLevel((Element)nodes.item(0));
+                    break;
+                case "save_level":
+                    response = saveLevel((Element)nodes.item(0));
+                    break;
+                case "get_top":
+                    response = getTop((Element)nodes.item(0));
+                    break;
                 default:
                     System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
+            // Log the response
+            System.out.println(response.getBody());
+
+            // Return to the client
+            return response;
         } catch (ParserConfigurationException | IOException | SAXException e) {
             System.out.println("[Galaxy][POST][ERROR] Thrown Error: ");
             e.printStackTrace();
@@ -155,8 +178,6 @@ public class GalaxyServer {
     }
 
     private ResponseEntity<String> loadCrib(Element element) {
-        System.out.println("[Galaxy][POST] loadcrib request received");
-
         /*
          * 0 - Success
          * 1 - Error Loading Crib / Can't find a crib with that name (need to test codes)
@@ -224,8 +245,6 @@ public class GalaxyServer {
     }
 
     private ResponseEntity<String> saveCrib(Node node) {
-        System.out.println("[Galaxy][POST] savecrib request received");
-
         /*
          * 0 - Success
          * 1 - Error Saving Crib / Crib already exists (need to test codes)
@@ -296,8 +315,6 @@ public class GalaxyServer {
     }
 
     private ResponseEntity<String> sendPostcard(Element element) {
-        System.out.println("[Galaxy][POST] postcard request received");
-
         // Parse data from the request
         String to = element.getAttribute("to");
         String subject = element.getAttribute("subject");
@@ -315,22 +332,168 @@ public class GalaxyServer {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    // ACE AND MULCH's GAMES RESPONSE CODES
+    // 0 - Success
+    // 1 - User Not Authorized
+    // 2 - There was a problem with your request, try again later
+    // 3 - Name already exists on server
+    // 4 - Cannot find a game with that name
+
     private ResponseEntity<String> getShLevels(Element element) throws IOException {
-        System.out.println("[Galaxy][POST] get_sh_levels request received");
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<get_sh_levels r=\"0\" >");
 
-        //TODO: GET THE LEVELS SAVED ON THE SERVER
+        List<Level> sharedLevels = levelService.getLevelsByUserId(Integer.valueOf(element.getAttribute("uid")));
 
-        return new ResponseEntity<>("<get_sh_levels r=\"0\"><level n=\"\"><level_data /></level></get_sh_levels>", HttpStatus.OK);
+        if (sharedLevels.isEmpty()) {
+            // No shared levels
+            stringBuilder.append("<level n=\"\" />");
+        } else {
+            // Add their shared levels to the list
+            for (Level level : sharedLevels) {
+                stringBuilder.append("<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName() + "\" />");
+            }
+            stringBuilder.append("<level />");
+        }
+        stringBuilder.append("</get_sh_levels>");
+
+        return new ResponseEntity<>(stringBuilder.toString(), HttpStatus.OK);
     }
 
     private ResponseEntity<String> getLevel(Element element) {
-        //TODO: DO THIS
-        return new ResponseEntity<>("<get_level r=\"0\"><level n=\"\"><level_data /></level></get_level>", HttpStatus.OK);
+        Integer levelId = Integer.valueOf(element.getAttribute("id"));
+        Level level = levelService.findLevelById(levelId).orElse(null);
+
+        String levelData = level == null ? "<level />" : level.getLevelData();
+
+        //TODO: NOT SURE WHICH IS CORRECT?
+        //return new ResponseEntity<>("<get_level r=\"0\"><level id=\"" + levelId + "\">" + levelData + "</level></get_level>", HttpStatus.OK);
+        return new ResponseEntity<>("<get_level r=\"0\">" + levelData + "</get_level>", HttpStatus.OK);
     }
 
     private ResponseEntity<String> addLevel(Element element) {
-        //TODO: DO THIS
-        return new ResponseEntity<>("<add_level r=\"0\"><level n=\"\"><level_data /></level></add_level>", HttpStatus.OK);
+        int responseCode = 0;
+
+        String levelName = element.getAttribute("n");
+        String gameName = element.getAttribute("gn");
+
+        // Check to see if the level with that name already is saved on the server
+        if (levelService.existsByLevelNameAndGameName(levelName, gameName)) {
+            //TODO: ADD A CHECK TO OVERRIDE IF SAME PERSON (NOT SURE IF ALLOWED AT ALL ANYWAYS)
+            responseCode = 3;
+        }
+
+        // Return to the client
+        return new ResponseEntity<>("<add_level r=\"" + responseCode + "\" n=\"" + levelName
+                + "\" gn=\"" + gameName + "\" ></add_level>", HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> saveLevel(Element element) {
+        int responseCode = 0;
+
+        String levelName = element.getAttribute("n");
+        String tnurl = element.getAttribute("tnurl");
+        String gameName = element.getAttribute("gn");
+        Integer uid = Integer.valueOf(element.getAttribute("uid"));
+
+        String levelData = "";
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document newDocument = builder.newDocument();
+            Node importedNode = newDocument.importNode(element.getFirstChild(), true);
+            newDocument.appendChild(importedNode);
+
+            levelData = ArkOneParser.RemoveXMLTag(newDocument);
+        } catch (ParserConfigurationException | TransformerException e) {
+            System.out.println("[Galaxy][POST] Exception thrown when saving crib: ");
+            e.printStackTrace();
+            responseCode = 1;
+        }
+
+        Level level = Level.builder()
+                .userId(uid)
+                .levelName(levelName)
+                .gameName(gameName)
+                .levelData(levelData)
+                .sharedDate(LocalDateTime.now())
+                .imagePath(tnurl)
+                .build();
+
+        Level savedLevel = levelService.save(level);
+
+        Integer levelId = 0;
+
+        if (savedLevel == null) {
+            responseCode = 2;
+        } else {
+            levelId = savedLevel.getId();
+        }
+
+        //TODO: THIS MIGHT BE WRONG?
+        //TODO: MIGHT NEED TO UPDATE TO ACCOUNT FOR UPDATING ALREADY UPLOADED LEVELS
+        return new ResponseEntity<>("<save_level r=\"" + responseCode + "\" n=\"" + levelName +  "\" tnurl=\"" + tnurl + "\" id=\"" + levelId
+                + "\" gn=\"" + gameName + "\" uid=\"" + uid + "\" />", HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> getTop(Element element) {
+        // Get the game name
+        String gameName = element.getAttribute("gn");
+        String type = element.getAttribute("t");
+        int count = Integer.parseInt(element.getAttribute("c"));
+
+        List<Level> allLevelsWithName = levelService.findAllByGameName(gameName);
+        List<Level> filteredLevels = new ArrayList<>();
+
+        int maxSize = Math.min(count, allLevelsWithName.size());
+        // Switch based on what type of getTop it is
+        switch (type) {
+            case "b":
+                // Best Levels
+                //TODO: Sort them by highest whatever
+
+                // Filter down to the top X levels
+                for (int i = 0; i < maxSize; i++) {
+                    //TODO: SWITCH THIS TO USE THE SORTED LEVELS
+                    filteredLevels.add(allLevelsWithName.get(i));
+                }
+                break;
+            case "r":
+                // Random Level
+
+                break;
+            case "l":
+                // Latest Levels
+
+                break;
+            default:
+                // Unhandled type
+                System.out.println("[Galaxy][POST] Unhandled type: " + type);
+                break;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("<get_top r=\"0\" c=\"" + maxSize + "\" t=\"" + type + "\" gn=\"" + gameName + "\">");
+
+        if (filteredLevels.isEmpty()) {
+            // No levels match
+            stringBuilder.append("<level n=\"\" />");
+        } else {
+            // Add all the found levels to the response
+            for (Level level : filteredLevels) {
+                //TODO: THIS IS BROKEN
+                //stringBuilder.append("<level id=\"" + level.getId() + "\" tnpath=\"" + level.getImagePath() + "\" n=\""
+                //        + level.getLevelName() + "\" uid=\"" + level.getUserId() + "\" />");
+                //stringBuilder.append(level.getLevelData());
+                //stringBuilder.append("</level>");
+                stringBuilder.append("<level id=\"" + level.getId() + "\" uid=\"" + level.getUserId() + "\" n=\"" + level.getLevelName() + "\"/>");
+            }
+        }
+
+        stringBuilder.append(("</get_top>"));
+
+        return new ResponseEntity<>(stringBuilder.toString(), HttpStatus.OK);
     }
 
     /*
