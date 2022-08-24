@@ -33,4 +33,11 @@ public class Level {
     private LocalDateTime sharedDate;
 
     private String imagePath;
+
+    // 0 -> 5 "stars"
+    private Integer rating;
+
+    private Integer playCount;
+
+    private Integer pos;
 }

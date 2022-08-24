@@ -12,7 +12,10 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -33,9 +36,10 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @RestController
 public class GalaxyServer {
@@ -350,10 +354,15 @@ public class GalaxyServer {
             stringBuilder.append("<level n=\"\" />");
         } else {
             // Add their shared levels to the list
-            for (Level level : sharedLevels) {
-                stringBuilder.append("<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName() + "\" />");
-            }
             stringBuilder.append("<level />");
+            for (Level level : sharedLevels) {
+                User creator = userService.findByUUID(level.getUserId()).orElse(null);
+                String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
+
+                stringBuilder.append("<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                        + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
+                        + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>");
+            }
         }
         stringBuilder.append("</get_sh_levels>");
 
@@ -366,9 +375,19 @@ public class GalaxyServer {
 
         String levelData = level == null ? "<level />" : level.getLevelData();
 
-        //TODO: NOT SURE WHICH IS CORRECT?
-        //return new ResponseEntity<>("<get_level r=\"0\"><level id=\"" + levelId + "\">" + levelData + "</level></get_level>", HttpStatus.OK);
-        return new ResponseEntity<>("<get_level r=\"0\">" + levelData + "</get_level>", HttpStatus.OK);
+        if (level == null) {
+            return new ResponseEntity<>("<get_level r=\"0\">" + levelData + "</get_level>", HttpStatus.OK);
+        }
+
+        User creator = userService.findByUUID(level.getUserId()).orElse(null);
+        String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
+
+        // This might need to also have tnurl in it later
+        String levelTag = "<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
+                + "\" pos=\"" + level.getPos() + "\">";
+
+        return new ResponseEntity<>("<get_level r=\"0\">" + levelTag + levelData + "</level></get_level>", HttpStatus.OK);
     }
 
     private ResponseEntity<String> addLevel(Element element) {
@@ -419,6 +438,9 @@ public class GalaxyServer {
                 .levelData(levelData)
                 .sharedDate(LocalDateTime.now())
                 .imagePath(tnurl)
+                .rating(0)
+                .playCount(0)
+                .pos(0)
                 .build();
 
         Level savedLevel = levelService.save(level);
@@ -451,12 +473,13 @@ public class GalaxyServer {
         switch (type) {
             case "b":
                 // Best Levels
-                //TODO: Sort them by highest whatever
+                List<Level> sortedLevels = allLevelsWithName.stream()
+                        .sorted(Comparator.comparing(Level::getRating))
+                        .collect(Collectors.toList());
 
                 // Filter down to the top X levels
                 for (int i = 0; i < maxSize; i++) {
-                    //TODO: SWITCH THIS TO USE THE SORTED LEVELS
-                    filteredLevels.add(allLevelsWithName.get(i));
+                    filteredLevels.add(sortedLevels.get(i));
                 }
                 break;
             case "r":
@@ -482,12 +505,13 @@ public class GalaxyServer {
         } else {
             // Add all the found levels to the response
             for (Level level : filteredLevels) {
-                //TODO: THIS IS BROKEN
-                //stringBuilder.append("<level id=\"" + level.getId() + "\" tnpath=\"" + level.getImagePath() + "\" n=\""
-                //        + level.getLevelName() + "\" uid=\"" + level.getUserId() + "\" />");
-                //stringBuilder.append(level.getLevelData());
-                //stringBuilder.append("</level>");
-                stringBuilder.append("<level id=\"" + level.getId() + "\" uid=\"" + level.getUserId() + "\" n=\"" + level.getLevelName() + "\"/>");
+                User creator = userService.findByUUID(level.getUserId()).orElse(null);
+                String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
+
+                stringBuilder.append("<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                        + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
+                        + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>");
+                //stringBuilder.append("<level id=\"" + level.getId() + "\" uid=\"" + level.getUserId() + "\" n=\"" + level.getLevelName() + "\"/>");
             }
         }
 
