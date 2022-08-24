@@ -1,5 +1,6 @@
 package com.icedberries.UBFunkeysServer.domain;
 
+import com.icedberries.UBFunkeysServer.config.TableNames;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Cribs")
+@Table(name = TableNames.CRIB)
 public class Crib {
 
     @Id

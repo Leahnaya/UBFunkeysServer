@@ -96,4 +96,8 @@ public class ArkOneParser {
         // Nothing found
         return null;
     }
+
+    public static String[] ParseRoutingStrings(String command) {
+
+    }
 }

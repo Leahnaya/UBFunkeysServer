@@ -1,5 +1,6 @@
 package com.icedberries.UBFunkeysServer.domain;
 
+import com.icedberries.UBFunkeysServer.config.TableNames;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,10 +14,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -24,7 +22,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Users")
+@Table(name = TableNames.USER)
 public class User {
 
     // User ID

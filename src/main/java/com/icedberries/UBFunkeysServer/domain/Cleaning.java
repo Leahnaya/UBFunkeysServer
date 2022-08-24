@@ -1,5 +1,6 @@
 package com.icedberries.UBFunkeysServer.domain;
 
+import com.icedberries.UBFunkeysServer.config.TableNames;
 import lombok.*;
 
 import javax.persistence.Entity;
@@ -12,7 +13,7 @@ import javax.persistence.Table;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Cleanings")
+@Table(name = TableNames.CLEANING)
 public class Cleaning {
 
     // DB ID

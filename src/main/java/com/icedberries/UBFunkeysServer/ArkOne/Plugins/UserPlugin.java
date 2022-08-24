@@ -201,7 +201,7 @@ public class UserPlugin {
         User buddy = userService.findByUsername(element.getAttribute("n")).orElse(null);
         User thisUser = server.getConnectedUsers().get(connection.getClientIdentifier());
 
-        boolean fail = false;
+        boolean failed = false;
         boolean isAlreadyBuddy = false;
 
         if (buddy != null && buddy.getRawBuddyList() != null) {
@@ -223,23 +223,23 @@ public class UserPlugin {
 
         if (buddy == null) {
             rootElement.setAttribute("r", "2");
-            fail = true;
+            failed = true;
         } else if (buddy.getIsOnline() == 0) {
             rootElement.setAttribute("r", "5");
-            fail = true;
+            failed = true;
         } else if (isAlreadyBuddy) {
             rootElement.setAttribute("r", "3");
-            fail = true;
+            failed = true;
         } else if (buddy.getUsername().equals("") || buddy.getUsername().equals("GUESTUSER")) {
             rootElement.setAttribute("r", "2");
-            fail = true;
+            failed = true;
         }
 
         rootElement.setAttribute("n", element.getAttribute("n"));
         resp.appendChild(rootElement);
 
         // Check if failed
-        if (fail) {
+        if (failed) {
             return ArkOneParser.RemoveXMLTag(resp);
         } else {
             Document send = dBuilder.newDocument();

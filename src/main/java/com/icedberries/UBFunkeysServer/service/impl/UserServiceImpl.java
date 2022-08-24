@@ -17,7 +17,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    public final UserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     Server server;

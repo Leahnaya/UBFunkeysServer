@@ -1,5 +1,6 @@
 package com.icedberries.UBFunkeysServer.domain;
 
+import com.icedberries.UBFunkeysServer.config.TableNames;
 import lombok.*;
 import org.hibernate.annotations.Type;
 
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "GameMakerLevels")
+@Table(name = TableNames.LEVEL)
 public class Level {
 
     @Id

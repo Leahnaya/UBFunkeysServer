@@ -2,6 +2,8 @@ package com.icedberries.UBFunkeysServer.ArkOne;
 
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.BasePlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.GalaxyPlugin;
+import com.icedberries.UBFunkeysServer.ArkOne.Plugins.Multiplayer.MultiplayerPlugin;
+import com.icedberries.UBFunkeysServer.ArkOne.Plugins.Multiplayer.RainbowShootoutPlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.TrunkPlugin;
 import com.icedberries.UBFunkeysServer.ArkOne.Plugins.UserPlugin;
 import com.icedberries.UBFunkeysServer.domain.User;
@@ -11,25 +13,18 @@ import javagrinko.spring.tcp.Server;
 import javagrinko.spring.tcp.TcpController;
 import javagrinko.spring.tcp.TcpHandler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @TcpController
-@EnableScheduling
 public class ArkOneController implements TcpHandler {
 
     public static final String IP_ADDRESS = "127.0.0.1";
-
-    private boolean firstOfflineScheduledRun = true;
 
     @Autowired
     Server server;
@@ -54,6 +49,12 @@ public class ArkOneController implements TcpHandler {
     @Autowired
     TrunkPlugin trunkPlugin;
 
+    @Autowired
+    MultiplayerPlugin multiplayerPlugin;
+
+    @Autowired
+    RainbowShootoutPlugin rainbowShootoutPlugin;
+
     @Override
     public void receiveData(Connection connection, byte[] data) {
         // Log the received request
@@ -66,12 +67,15 @@ public class ArkOneController implements TcpHandler {
         // Parse the incoming data into individual commands
         List<String> commands = ArkOneParser.ParseReceivedMessage(xmlData);
 
+        // Parse out the plugin from the routing string (if it exists)
+        String[] routingString = ArkOneParser.ParseRoutingStrings(xmlData);
+
         // Handle each command
         for (String command : commands) {
             try {
                 Element commandInfo = (Element)ArkOneParser.ParseCommand(command);
                 switch(commandInfo.getNodeName()) {
-                    // Plugin 0 - Core
+                    // ----------------------------- Plugin 0 (Core) ---------------------------- \\
                     case "a_lgu":
                         responses.add(basePlugin.LoginGuestUser());
                         break;
@@ -85,7 +89,7 @@ public class ArkOneController implements TcpHandler {
                         responses.add(basePlugin.LoginRegisteredUser(commandInfo, connection.getClientIdentifier()));
                         break;
 
-                    // Plugin 1 (User)
+                    // ----------------------------- Plugin 1 (User) ---------------------------- \\
                     case "u_reg":
                         responses.add(userPlugin.RegisterUser(commandInfo));
                         break;
@@ -113,19 +117,30 @@ public class ArkOneController implements TcpHandler {
                     case "u_dbr":
                         responses.add(userPlugin.DeleteBuddyResponse(commandInfo, connection));
                         break;
+                    case "u_inv":
+                        responses.add(userPlugin.InvitePlayer());
+                        break;
+                    case "u_inr":
+                        responses.add(userPlugin.InviteBuddyResponse());
+                        break;
                     case "p":
                         responses.add(userPlugin.Ping(connection));
                         break;
 
-                    // Plugin 7 (Galaxy)
+                    // ----------------------- Plugin 5 (Rainbow Shootout) ---------------------- \\
+                    case "cm":
+                        responses.add(rainbowShootoutPlugin.CharacterMove(commandInfo));
+                        break;
+                    case "bs":
+                        responses.add(rainbowShootoutPlugin.BlockShot());
+                        break;
+
+                    // ---------------------------- Plugin 7 (Galaxy) --------------------------- \\
                     case "lpv":
                         responses.add(galaxyPlugin.LoadProfileVersion(connection));
                         break;
                     case "vsu":
                         responses.add(galaxyPlugin.VersionStatisticsRequest());
-                        break;
-                    case "sp":
-                        responses.add(galaxyPlugin.SaveProfile(commandInfo, connection));
                         break;
                     case "spp":
                         responses.add(galaxyPlugin.SaveProfilePart(commandInfo, connection));
@@ -137,7 +152,7 @@ public class ArkOneController implements TcpHandler {
                         responses.add(galaxyPlugin.GetLeaderboardStats(commandInfo, connection));
                         break;
 
-                    // Plugin 10 (Trunk)
+                    // ---------------------------- Plugin 10 (Trunk) --------------------------- \\
                     case "gua":
                         responses.add(trunkPlugin.GetUserAssets(connection));
                         break;
@@ -187,7 +202,42 @@ public class ArkOneController implements TcpHandler {
                         responses.add(trunkPlugin.BuyItem(commandInfo, connection));
                         break;
 
-                    // Catch Unhandled Commands
+                    // ----------------------- Multiplayer (Shared by all) ---------------------- \\
+                    case "lv":
+                        responses.add(multiplayerPlugin.LeaveGame());
+                        break;
+                    case "rp":
+                        responses.add(multiplayerPlugin.ReadyPlay());
+                        break;
+                    case "ms":
+                        responses.add(multiplayerPlugin.MessageOpponent(commandInfo, connection, routingString[1]));
+                        break;
+                    case "pa":
+                        responses.add(multiplayerPlugin.PlayAgain());
+
+                    // ---------------------------- Conflict Commands --------------------------- \\
+                    case "jn":
+                        if (routingString[1].equals("2")) {
+                            //TODO: IMPLEMENT CHAT - For now throw unhandled
+                            responses.add("<unknown />");
+                            System.out.println("[ArkOne][ERROR] Unhandled command: " + commandInfo.getNodeName());
+                            //responses.add(chatPlugin.JoinChat());
+                        } else {
+                            responses.add(multiplayerPlugin.JoinGame());
+                        }
+                        break;
+                    case "sp":
+                        switch(routingString[1]) {
+                            case "5":
+                                responses.add(rainbowShootoutPlugin.ShotParameters(commandInfo));
+                                break;
+                            case "7":
+                                responses.add(galaxyPlugin.SaveProfile(commandInfo, connection));
+                                break;
+                        }
+                        break;
+
+                    // -------------------------------------------------------------------------- \\
                     default:
                         responses.add("<unknown />");
                         System.out.println("[ArkOne][ERROR] Unhandled command: " + commandInfo.getNodeName());
@@ -245,42 +295,6 @@ public class ArkOneController implements TcpHandler {
             } catch(Exception e) {
                 // Do nothing since the client is disconnecting anyway
             }
-        }
-    }
-
-    // Run this every 60 seconds to check for inactive online users
-    @Scheduled(fixedRate = 60000)
-    public void setOfflineInactiveUsers() {
-        List<User> onlineUsers = userService.getOnlineUsers();
-
-        // If there is at least one user in the list
-        if (onlineUsers.size() > 0) {
-            for (User user : onlineUsers) {
-                // Make sure the user has a last ping else turn them offline
-                // A ping should be set on login
-                if (firstOfflineScheduledRun) {
-                    user.setIsOnline(0);
-                    userService.save(user);
-                    continue;
-                }
-                if (user.getLastPing() == null) {
-                    user.setIsOnline(0);
-                    userService.save(user);
-                    continue;
-                }
-
-                // Calculate how many milliseconds since last ping/login
-                long difference = Math.abs(Duration.between(user.getLastPing(), LocalDateTime.now()).toMillis());
-                if (difference > 60000) {
-                    // USer has been online for more than 60 seconds without a new ping - set them offline
-                    user.setIsOnline(0);
-                    userService.save(user);
-                }
-            }
-        }
-
-        if (firstOfflineScheduledRun) {
-            firstOfflineScheduledRun = false;
         }
     }
 }
