@@ -43,7 +43,7 @@ public class RainbowShootout {
     private Integer score;
 
     // If the user is ready to start the round
-    private String ready;
+    private Integer ready;
 
     public java.util.UUID getConnectionId() {
         return java.util.UUID.fromString(connectionId);

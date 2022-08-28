@@ -15,7 +15,6 @@ public interface Server {
     List<Connection> getConnections();
     void addListener(Connection.Listener listener);
     HashMap<UUID, User> getConnectedUsers();
-
     void addConnectedUser(UUID uuid, User user);
     void removeConnectedUser(UUID uuid);
 }

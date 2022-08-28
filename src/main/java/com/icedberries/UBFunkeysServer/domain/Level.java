@@ -36,9 +36,20 @@ public class Level {
     private String imagePath;
 
     // 0 -> 5 "stars"
-    private Integer rating;
+    private double rating;
+
+    private Integer ratingCount;
 
     private Integer playCount;
 
     private Integer pos;
+
+    public Integer getRating() {
+        if (rating <= 0) {
+            return 0;
+        }
+
+        double average = rating / ratingCount;
+        return (int)Math.rint(average);
+    }
 }

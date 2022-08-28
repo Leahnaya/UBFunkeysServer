@@ -97,7 +97,19 @@ public class ArkOneParser {
         return null;
     }
 
-    public static String[] ParseRoutingStrings(String command) {
+    public static List<String> ParseRoutingStrings(String command) {
+        List<String> routeInfo = new ArrayList<>();
+        String routingString = "";
 
+        if (command.endsWith("#")) {
+            routingString = command.substring(command.lastIndexOf(">") + 1, command.lastIndexOf("#"));
+        }
+
+        if (!routingString.equals("")) {
+            String[] routingData = routingString.split("\\|");
+            routeInfo.addAll(Arrays.asList(routingData));
+        }
+
+        return routeInfo;
     }
 }

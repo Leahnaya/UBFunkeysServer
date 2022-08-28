@@ -439,6 +439,7 @@ public class GalaxyServer {
                 .sharedDate(LocalDateTime.now())
                 .imagePath(tnurl)
                 .rating(0)
+                .ratingCount(0)
                 .playCount(0)
                 .pos(0)
                 .build();

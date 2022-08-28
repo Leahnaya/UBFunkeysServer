@@ -21,6 +21,9 @@ public class TcpConnection implements Connection {
     private Socket socket;
     private List<Listener> listeners = new CopyOnWriteArrayList<>();
     private UUID clientIdentifier = null;
+    private Integer teamSide = 5;
+    private Integer opponentUID;
+    private String opponentConID = "";
     private Integer chunksLeft = 0;
     private String saveData = "";
 
@@ -119,6 +122,16 @@ public class TcpConnection implements Connection {
     }
 
     @Override
+    public Integer getTeamSide() {
+        return teamSide;
+    }
+
+    @Override
+    public void setTeamSide(Integer teamSide) {
+        this.teamSide = teamSide;
+    }
+
+    @Override
     public String getSaveData() {
         return saveData;
     }
@@ -126,5 +139,30 @@ public class TcpConnection implements Connection {
     @Override
     public void setSaveData(String saveData) {
         this.saveData = saveData;
+    }
+
+    @Override
+    public void setOpponentUID(Integer opponentUID) {
+        this.opponentUID = opponentUID;
+    }
+
+    @Override
+    public Integer getOpponentUID() {
+        return opponentUID;
+    }
+
+    @Override
+    public void setOpponentConID(UUID opponentConID) {
+        this.opponentConID = opponentConID.toString();
+    }
+
+    @Override
+    public String getOpponentConIDAsString() {
+        return opponentConID;
+    }
+
+    @Override
+    public UUID getOpponentConIDAsUUID() {
+        return UUID.fromString(opponentConID);
     }
 }

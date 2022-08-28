@@ -67,11 +67,14 @@ public class ArkOneController implements TcpHandler {
         // Parse the incoming data into individual commands
         List<String> commands = ArkOneParser.ParseReceivedMessage(xmlData);
 
-        // Parse out the plugin from the routing string (if it exists)
-        String[] routingString = ArkOneParser.ParseRoutingStrings(xmlData);
-
         // Handle each command
         for (String command : commands) {
+            // Remove the null character from the end if it exists
+            command = command.replace("\0", "");
+
+            // Parse out the plugin from the routing string (if it exists)
+            List<String> routingString = ArkOneParser.ParseRoutingStrings(command);
+
             try {
                 Element commandInfo = (Element)ArkOneParser.ParseCommand(command);
                 switch(commandInfo.getNodeName()) {
@@ -210,29 +213,40 @@ public class ArkOneController implements TcpHandler {
                         responses.add(multiplayerPlugin.ReadyPlay());
                         break;
                     case "ms":
-                        responses.add(multiplayerPlugin.MessageOpponent(commandInfo, connection, routingString[1]));
+                        responses.add(multiplayerPlugin.MessageOpponent(commandInfo, connection, routingString.get(1)));
                         break;
                     case "pa":
                         responses.add(multiplayerPlugin.PlayAgain());
 
                     // ---------------------------- Conflict Commands --------------------------- \\
                     case "jn":
-                        if (routingString[1].equals("2")) {
-                            //TODO: IMPLEMENT CHAT - For now throw unhandled
-                            responses.add("<unknown />");
-                            System.out.println("[ArkOne][ERROR] Unhandled command: " + commandInfo.getNodeName());
-                            //responses.add(chatPlugin.JoinChat());
-                        } else {
-                            responses.add(multiplayerPlugin.JoinGame());
+                        switch(routingString.get(1)) {
+                            case "2":
+                                //TODO: IMPLEMENT CHAT - For now throw unhandled
+                                responses.add("<unknown />");
+                                System.out.println("[ArkOne][ERROR] Unhandled command: " + commandInfo.getNodeName());
+                                //responses.add(chatPlugin.JoinChat());
+                                break;
+                            case "5":
+                                responses.add(rainbowShootoutPlugin.JoinGame(commandInfo, connection));
+                                break;
+                            default:
+                                responses.add("<unknown />");
+                                System.out.println("[ArkOne][Error] Unhandled 'jn' route to plugin: " + routingString.get(1));
+                                break;
                         }
                         break;
                     case "sp":
-                        switch(routingString[1]) {
+                        switch(routingString.get(1)) {
                             case "5":
                                 responses.add(rainbowShootoutPlugin.ShotParameters(commandInfo));
                                 break;
                             case "7":
                                 responses.add(galaxyPlugin.SaveProfile(commandInfo, connection));
+                                break;
+                            default:
+                                responses.add("<unknown />");
+                                System.out.println("[ArkOne][Error] Unhandled 'sp' route to plugin: " + routingString.get(1));
                                 break;
                         }
                         break;

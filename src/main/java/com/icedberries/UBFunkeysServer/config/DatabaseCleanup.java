@@ -4,6 +4,7 @@ import com.icedberries.UBFunkeysServer.domain.Multiplayer.RainbowShootout;
 import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.RainbowShootoutService;
 import com.icedberries.UBFunkeysServer.service.UserService;
+import javagrinko.spring.tcp.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,6 +17,9 @@ import java.util.List;
 @EnableScheduling
 @Component
 public class DatabaseCleanup {
+
+    @Autowired
+    Server server;
 
     @Autowired
     UserService userService;
@@ -49,7 +53,7 @@ public class DatabaseCleanup {
                 // Calculate how many milliseconds since last ping/login
                 long difference = Math.abs(Duration.between(user.getLastPing(), LocalDateTime.now()).toMillis());
                 if (difference > 60000) {
-                    // USer has been online for more than 60 seconds without a new ping - set them offline
+                    // User has been online for more than 60 seconds without a new ping - set them offline
                     user.setIsOnline(0);
                     userService.save(user);
                 }
@@ -67,10 +71,14 @@ public class DatabaseCleanup {
     public void clearOpenMultiplayerMatchmaking() {
         // Get all open multiplayer matchmaking entries in all tables
         List<RainbowShootout> openRainbowShootout = rainbowShootoutService.findAll();
+        List<User> onlineUsers = userService.getOnlineUsers();
 
         // Iterate over each game's entries
         for (RainbowShootout rainbowShootout : openRainbowShootout) {
-            rainbowShootoutService.delete(rainbowShootout);
+            User rsUser = userService.findByUUID(rainbowShootout.getUserId()).orElse(null);
+            if (rsUser == null || !onlineUsers.contains(rsUser)) {
+                rainbowShootoutService.delete(rainbowShootout);
+            }
         }
     }
 }

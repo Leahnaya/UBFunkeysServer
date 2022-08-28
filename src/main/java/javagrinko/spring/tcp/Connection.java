@@ -3,6 +3,7 @@ package javagrinko.spring.tcp;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.UUID;
 
 public interface Connection {
@@ -15,9 +16,15 @@ public interface Connection {
     void setClientIdentifier(UUID newId);
     Integer getChunksLeft();
     void setChunksLeft(Integer chunksLeft);
-
+    Integer getTeamSide();
+    void setTeamSide(Integer teamSide);
     String getSaveData();
     void setSaveData(String saveData);
+    void setOpponentUID(Integer opponentUID);
+    Integer getOpponentUID();
+    void setOpponentConID(UUID opponentConID);
+    String getOpponentConIDAsString();
+    UUID getOpponentConIDAsUUID();
     interface Listener {
         void messageReceived(Connection connection, byte[] bytes)
                 throws InvocationTargetException, IllegalAccessException;
