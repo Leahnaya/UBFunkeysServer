@@ -1,10 +1,19 @@
 package com.icedberries.UBFunkeysServer.domain;
 
 import com.icedberries.UBFunkeysServer.config.TableNames;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 @Getter
@@ -42,6 +51,8 @@ public class Level {
 
     private Integer playCount;
 
+    // We aren't 100% sure what this was used for originally,
+    // so now it will just hold the total number of stars ever received
     private Integer pos;
 
     public Integer getRating() {
@@ -51,5 +62,9 @@ public class Level {
 
         double average = rating / ratingCount;
         return (int)Math.rint(average);
+    }
+
+    public Double getRatingRaw() {
+        return rating;
     }
 }

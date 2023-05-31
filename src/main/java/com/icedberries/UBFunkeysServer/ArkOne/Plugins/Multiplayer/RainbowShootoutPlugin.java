@@ -297,4 +297,71 @@ public class RainbowShootoutPlugin {
 
         return "<notneeded/>";
     }
+
+    public String BlockShot(Element element, Connection connection) throws ParserConfigurationException, TransformerException {
+        boolean blocked = false;
+
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document response = dBuilder.newDocument();
+        Element rootElement = response.createElement("h5_0");
+        response.appendChild(rootElement);
+
+        Element bsElement = response.createElement("bs");
+        bsElement.setAttribute("d", element.getAttribute("d"));
+        bsElement.setAttribute("lx", element.getAttribute("lx"));
+        bsElement.setAttribute("m", element.getAttribute("m"));
+        bsElement.setAttribute("c", element.getAttribute("c"));
+        bsElement.setAttribute("bid", element.getAttribute("bid"));
+        rootElement.appendChild(bsElement);
+
+        // For some reason, the Block Shot commmand is in charge of setting the score.
+        switch(element.getAttribute("c")) {
+            case "0": // Missed (Above net)
+            case "1": // Blocked
+            case "3": // Missed (Beside net)
+                blocked = true;
+                break;
+        }
+
+        RainbowShootout myRS = rainbowShootoutService.findByUserId(server.getConnectedUsers().get(
+                connection.getClientIdentifier()).getUUID()).orElse(null);
+        RainbowShootout oppRS = rainbowShootoutService.findByUserId(connection.getOpponentUID()).orElse(null);
+
+        if (myRS  != null && oppRS != null) {
+            if (blocked) {
+                myRS.setScore(myRS.getScore() + 1);
+                rainbowShootoutService.save(myRS);
+            } else {
+                oppRS.setScore(myRS.getScore() + 1);
+                rainbowShootoutService.save(oppRS);
+            }
+
+            Element psElement = response.createElement("ps");
+            psElement.setAttribute("s", String.valueOf(oppRS.getScore()));
+            rootElement.appendChild(psElement);
+
+            Element osElement = response.createElement("os");
+            osElement.setAttribute("s", String.valueOf(myRS.getScore()));
+            rootElement.appendChild(osElement);
+        }
+
+        arkOneSender.SendToUser(connection.getOpponentConIDAsUUID(), ArkOneParser.RemoveXMLTag(response));
+
+        Document response1 = dBuilder.newDocument();
+        Element rootElement1 = response1.createElement("h5_0");
+        response1.appendChild(rootElement1);
+
+        Element psElement = response1.createElement("ps");
+        assert myRS != null;
+        psElement.setAttribute("s", String.valueOf(myRS.getScore()));
+        rootElement1.appendChild(psElement);
+
+        Element osElement = response1.createElement("os");
+        assert oppRS != null;
+        osElement.setAttribute("s", String.valueOf(oppRS.getScore()));
+        rootElement1.appendChild(osElement);
+
+        return ArkOneParser.RemoveXMLTag(response1);
+    }
 }

@@ -115,8 +115,8 @@ public class GalaxyPlugin {
             }
 
             // Write to file
-            fileService.save(new MockMultipartFile("profile", "profile", "text/xml", connection.getSaveData().getBytes()),
-                    profileName);
+            fileService.saveProfileFile(new MockMultipartFile("profile", "profile", "text/xml",
+                            connection.getSaveData().getBytes()), profileName);
 
             rootElement.appendChild(subElement);
         } else {

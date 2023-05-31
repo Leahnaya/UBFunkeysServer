@@ -3,7 +3,6 @@ package javagrinko.spring.tcp;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
-import java.util.HashMap;
 import java.util.UUID;
 
 public interface Connection {

@@ -9,7 +9,7 @@ public interface LevelService {
 
     Optional<Level> getLevelByName(String levelName);
 
-    List<Level> getLevelsByUserId(Integer userId);
+    List<Level> getLevelsByGameNameAndUserId(String gameName, Integer userId);
 
     Boolean existsByLevelNameAndGameName(String levelName, String gameVersion);
 
@@ -18,4 +18,10 @@ public interface LevelService {
     List<Level> findAllByGameName(String gameName);
 
     Optional<Level> findLevelById(Integer id);
+
+    List<Level> findAllByGameNameAndKeyword(String gameName, String keyword);
+
+    List<Level> findAllByGameNameAndAuthor(String gameName, String author);
+
+    List<Level> findAllByGameNameAndLevelName(String gameName, String levelName);
 }

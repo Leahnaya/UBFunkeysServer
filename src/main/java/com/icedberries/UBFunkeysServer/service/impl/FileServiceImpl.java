@@ -8,7 +8,9 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,12 +29,28 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void save(MultipartFile file, String subDir) {
+    public void saveGameMakerImage(byte[] imageData, String subDirAndFileName) {
+        try {
+            String path = subDirAndFileName.substring(0, subDirAndFileName.lastIndexOf("/"));
+            Path folderPath = Paths.get(fileStorageLocation.toString(), path);
+            Files.createDirectories(folderPath);
+
+            InputStream imageContentStream = new ByteArrayInputStream(imageData);
+            Path pathToFile = Paths.get(fileStorageLocation.toString(), subDirAndFileName);
+            Files.copy(imageContentStream, pathToFile, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("[Galaxy][PUT] Image saved successfully");
+        } catch(Exception e) {
+            throw new RuntimeException("Could not store the profile file. Error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void saveProfileFile(MultipartFile file, String subDir) {
         try {
             Files.createDirectories(fileStorageLocation.resolve(subDir));
             Files.copy(file.getInputStream(), fileStorageLocation.resolve(subDir).resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
         } catch(Exception e) {
-            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
+            throw new RuntimeException("Could not store the profile file. Error: " + e.getMessage());
         }
     }
 

@@ -21,8 +21,8 @@ public class LevelServiceImpl implements LevelService {
     }
 
     @Override
-    public List<Level> getLevelsByUserId(Integer userId) {
-        return levelRepository.getLevelsByUserId(userId);
+    public List<Level> getLevelsByGameNameAndUserId(String gameName, Integer userId) {
+        return levelRepository.getLevelsByGameNameAndUserId(gameName, userId);
     }
 
     @Override
@@ -43,5 +43,20 @@ public class LevelServiceImpl implements LevelService {
     @Override
     public Optional<Level> findLevelById(Integer id) {
         return levelRepository.findLevelById(id);
+    }
+
+    @Override
+    public List<Level> findAllByGameNameAndKeyword(String gameName, String keyword) {
+        return levelRepository.findAllByGameNameAndKeyword(gameName, keyword);
+    }
+
+    @Override
+    public List<Level> findAllByGameNameAndAuthor(String gameName, String author) {
+        return levelRepository.findAllByGameNameAndAuthor(gameName, author);
+    }
+
+    @Override
+    public List<Level> findAllByGameNameAndLevelName(String gameName, String levelName) {
+        return levelRepository.findAllByGameNameAndLevelName(gameName, levelName);
     }
 }

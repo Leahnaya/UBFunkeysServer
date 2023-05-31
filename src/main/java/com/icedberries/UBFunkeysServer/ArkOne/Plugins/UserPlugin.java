@@ -2,7 +2,9 @@ package com.icedberries.UBFunkeysServer.ArkOne.Plugins;
 
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.ArkOne.ArkOneSender;
+import com.icedberries.UBFunkeysServer.domain.Multiplayer.RainbowShootout;
 import com.icedberries.UBFunkeysServer.domain.User;
+import com.icedberries.UBFunkeysServer.service.RainbowShootoutService;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
@@ -35,6 +37,9 @@ public class UserPlugin {
 
     @Autowired
     private ArkOneSender arkOneSender;
+
+    @Autowired
+    private RainbowShootoutService rainbowShootoutService;
 
     public String RegisterUser(Element element) throws ParserConfigurationException, TransformerException {
         String username = element.getAttribute("l");
@@ -443,6 +448,94 @@ public class UserPlugin {
         resp.appendChild(rootElement);
 
         return ArkOneParser.RemoveXMLTag(resp);
+    }
+
+    public String InvitePlayer(Element element, Connection connection, String plugin) throws ParserConfigurationException, TransformerException {
+        // Build message to send to other player
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document response = dBuilder.newDocument();
+        Element rootElement = response.createElement("u_inv");
+
+        rootElement.setAttribute("r", "0");
+        rootElement.setAttribute("av", element.getAttribute("av"));
+        rootElement.setAttribute("gid", element.getAttribute("gid"));
+        rootElement.setAttribute("bid", element.getAttribute("bid"));
+        rootElement.setAttribute("p", element.getAttribute("p"));
+        rootElement.setAttribute("t", element.getAttribute("t"));
+        rootElement.setAttribute("f", element.getAttribute("f"));
+        response.appendChild(rootElement);
+
+        User buddy = userService.findByUUID(Integer.valueOf(element.getAttribute("t"))).orElse(null);
+
+        if (buddy != null) {
+            switch (plugin) {
+                case "5":
+                    // Create new entry for the invitee
+                    RainbowShootout newRS = RainbowShootout.builder()
+                            .username(buddy.getUsername())
+                            .userId(buddy.getUUID())
+                            .challenge(1)
+                            .challenger(Integer.valueOf(element.getAttribute("f")))
+                            .challengerInfo(element.getAttribute("av") + "|0")
+                            .ready(0)
+                            .score(0)
+                            .build();
+                    rainbowShootoutService.save(newRS);
+
+                    // Update this players entry
+
+                    RainbowShootout myRS = rainbowShootoutService.findByUserId(
+                            server.getConnectedUsers().get(connection.getClientIdentifier()).getUUID()).orElse(null);
+                    if (myRS != null) {
+                        myRS.setChallenger(Integer.valueOf(element.getAttribute("t")));
+                        rainbowShootoutService.save(myRS);
+                    }
+                    break;
+                default:
+                    System.out.println("[ArkOne][ERROR] Unhandled plugin with ID [" + plugin + "] in UserPlugin.InvitePlayer!");
+                    return "<notneeded />";
+            }
+
+            connection.setOpponentUID(buddy.getUUID());
+            connection.setOpponentConID(buddy.getConnectionId());
+            arkOneSender.SendToUser(connection.getOpponentConIDAsUUID(), ArkOneParser.RemoveXMLTag(response));
+        }
+
+        return "<notneeded />";
+    }
+
+    public String InviteBuddyResponse(Element element, Connection connection, String plugin)
+            throws ParserConfigurationException, TransformerException {
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document response = dBuilder.newDocument();
+        Element rootElement = response.createElement("u_inr");
+
+        rootElement.setAttribute("r", "0");
+        rootElement.setAttribute("f", element.getAttribute("f"));
+        rootElement.setAttribute("t", element.getAttribute("t"));
+        rootElement.setAttribute("a", element.getAttribute("a"));
+        rootElement.setAttribute("p", element.getAttribute("p"));
+        response.appendChild(rootElement);
+
+        User fromUser = userService.findByUUID(Integer.valueOf(element.getAttribute("f"))).orElse(null);
+
+        if (fromUser != null) {
+            arkOneSender.SendToUser(fromUser.getConnectionId(), ArkOneParser.RemoveXMLTag(response));
+
+            switch (plugin) {
+                case "5":
+                    rainbowShootoutService.findByUserId(server.getConnectedUsers().get(connection.getClientIdentifier()).getUUID())
+                            .ifPresent(myRS -> rainbowShootoutService.delete(myRS));
+                    break;
+                default:
+                    System.out.println("[ArkOne][ERROR] Unhandled plugin with ID [" + plugin + "] in UserPlugin.InviteBuddyResponse!");
+                    return "<notneeded />";
+            }
+        }
+
+        return "<notneeded />";
     }
 
     public String Ping(Connection connection) {

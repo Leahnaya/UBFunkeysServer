@@ -5,7 +5,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface FileService {
 
-    void save(MultipartFile file, String subDir);
+    void saveProfileFile(MultipartFile file, String subDir);
+
+    void saveGameMakerImage(byte[] imageData, String subDirAndFileName);
 
     Resource load(String path);
 

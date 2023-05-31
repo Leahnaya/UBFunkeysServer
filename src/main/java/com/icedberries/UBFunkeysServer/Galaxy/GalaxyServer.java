@@ -4,7 +4,11 @@ import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.domain.Crib;
 import com.icedberries.UBFunkeysServer.domain.Level;
 import com.icedberries.UBFunkeysServer.domain.User;
-import com.icedberries.UBFunkeysServer.service.*;
+import com.icedberries.UBFunkeysServer.service.CribService;
+import com.icedberries.UBFunkeysServer.service.EmailService;
+import com.icedberries.UBFunkeysServer.service.FileService;
+import com.icedberries.UBFunkeysServer.service.LevelService;
+import com.icedberries.UBFunkeysServer.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +16,10 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
@@ -36,6 +42,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -63,7 +70,7 @@ public class GalaxyServer {
      * This is only used as part of the updater to pass files to the client as requested via URL path
      */
     @GetMapping("/**")
-    public void GalaxyGetResponse(HttpServletRequest request, HttpServletResponse response) {
+    public void GalaxyGetResponse(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String pathToFile = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
 
         // Change the file path to use spaces
@@ -71,8 +78,58 @@ public class GalaxyServer {
 
         System.out.println("[Galaxy][GET] Request for file: " + pathToFile);
 
-        Resource resource = new ClassPathResource("static/UpdateFiles/" + pathToFile);
         int errorCode = 0;
+
+        // THIS IF CHECK IS PROBABLY NOT SAFE IF UPDATES ARE BEING DONE AS WELL
+        // See if the requested file is a gamemaker image file
+        if (pathToFile.startsWith("data/") && pathToFile.endsWith(".jpg")) {
+            byte[] imageData = null;
+
+            // Remove the "data/" since it already exists within fileService
+            pathToFile = pathToFile.replace("data/", "");
+
+            // See if the requested level image exists
+            Resource resource;
+            if (fileService.fileExists(pathToFile)) {
+                // The file exists - Load the file to the stream
+                resource = fileService.load(pathToFile);
+            } else {
+                // The file doesn't exist - Load the default image
+                resource = fileService.load("DEFAULT.jpg");
+            }
+
+            try {
+                // Copy the bytes to a byte[]
+                imageData = FileCopyUtils.copyToByteArray(resource.getInputStream());
+            } catch (IOException e) {
+                // Print the error to the log but let the data be null, so we return a bad data response
+                System.out.println("[Galaxy][GET] Exception thrown when loading image: ");
+                e.printStackTrace();
+            }
+
+            // Verify that something was loaded
+            if (imageData == null) {
+                System.out.println("[Galaxy][GET][ERROR] Game maker image not found!");
+                errorCode = HttpServletResponse.SC_NOT_FOUND;
+                response.sendError(errorCode);
+                return;
+            }
+
+            // Now that the image has been loaded we can send it back
+            // The file exists - Load the file to the stream
+            InputStream fileContentStream = new ByteArrayInputStream(imageData);
+
+            // Copy the stream to the response's output stream
+            IOUtils.copy(fileContentStream, response.getOutputStream());
+
+            // Flush the buffer
+            // MIGHT ALSO NEED TO SET THE FILE CONTENT LENGTH AS A HEADER
+            response.flushBuffer();
+            System.out.println("[Galaxy][GET] Game maker image sent!");
+            return;
+        }
+
+        Resource resource = new ClassPathResource("static/UpdateFiles/" + pathToFile);
         try {
             // Try to open the file as a resource
             byte[] fileContent = org.apache.commons.io.IOUtils.toByteArray(resource.getInputStream());
@@ -116,6 +173,13 @@ public class GalaxyServer {
                 }
             }
         }
+    }
+
+    @PutMapping("/**")
+    public void GalaxyPutResponse(@RequestBody byte[] request, HttpServletRequest servletRequest) {
+        System.out.println("[Galaxy][PUT] Saving image file: " + servletRequest.getRequestURI());
+
+        fileService.saveGameMakerImage(request, servletRequest.getRequestURI().replace("data/", ""));
     }
 
     /**
@@ -165,6 +229,12 @@ public class GalaxyServer {
                 case "get_top":
                     response = getTop((Element)nodes.item(0));
                     break;
+                case "end_level":
+                    response = endLevel((Element)nodes.item(0));
+                    break;
+                case "search":
+                    response = search((Element)nodes.item(0));
+                    break;
                 default:
                     System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -175,7 +245,7 @@ public class GalaxyServer {
             // Return to the client
             return response;
         } catch (ParserConfigurationException | IOException | SAXException e) {
-            System.out.println("[Galaxy][POST][ERROR] Thrown Error: ");
+            //System.out.println("[Galaxy][POST][ERROR] Thrown Error: ");
             e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -347,7 +417,7 @@ public class GalaxyServer {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<get_sh_levels r=\"0\" >");
 
-        List<Level> sharedLevels = levelService.getLevelsByUserId(Integer.valueOf(element.getAttribute("uid")));
+        List<Level> sharedLevels = levelService.getLevelsByGameNameAndUserId(element.getAttribute("gn"), Integer.valueOf(element.getAttribute("uid")));
 
         if (sharedLevels.isEmpty()) {
             // No shared levels
@@ -359,9 +429,10 @@ public class GalaxyServer {
                 User creator = userService.findByUUID(level.getUserId()).orElse(null);
                 String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
 
-                stringBuilder.append("<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                String levelData = "<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
                         + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
-                        + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>");
+                        + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>";
+                stringBuilder.append(levelData);
             }
         }
         stringBuilder.append("</get_sh_levels>");
@@ -373,21 +444,12 @@ public class GalaxyServer {
         Integer levelId = Integer.valueOf(element.getAttribute("id"));
         Level level = levelService.findLevelById(levelId).orElse(null);
 
-        String levelData = level == null ? "<level />" : level.getLevelData();
+        String levelData = level == null ? "<level tnurl=\"\" />" : level.getLevelData();
 
         if (level == null) {
             return new ResponseEntity<>("<get_level r=\"0\">" + levelData + "</get_level>", HttpStatus.OK);
         }
-
-        User creator = userService.findByUUID(level.getUserId()).orElse(null);
-        String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
-
-        // This might need to also have tnurl in it later
-        String levelTag = "<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
-                + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
-                + "\" pos=\"" + level.getPos() + "\">";
-
-        return new ResponseEntity<>("<get_level r=\"0\">" + levelTag + levelData + "</level></get_level>", HttpStatus.OK);
+        return new ResponseEntity<>("<get_level r=\"0\">" + levelData + "</get_level>", HttpStatus.OK);
     }
 
     private ResponseEntity<String> addLevel(Element element) {
@@ -431,30 +493,31 @@ public class GalaxyServer {
             responseCode = 1;
         }
 
-        Level level = Level.builder()
-                .userId(uid)
-                .levelName(levelName)
-                .gameName(gameName)
-                .levelData(levelData)
-                .sharedDate(LocalDateTime.now())
-                .imagePath(tnurl)
-                .rating(0)
-                .ratingCount(0)
-                .playCount(0)
-                .pos(0)
-                .build();
-
-        Level savedLevel = levelService.save(level);
-
+        // If the level couldn't be parsed via the try-catch above, don't attempt to save it
         Integer levelId = 0;
+        if (responseCode != 1) {
+            Level level = Level.builder()
+                    .userId(uid)
+                    .levelName(levelName)
+                    .gameName(gameName)
+                    .levelData(levelData)
+                    .sharedDate(LocalDateTime.now())
+                    .imagePath(tnurl)
+                    .rating(0)
+                    .ratingCount(0)
+                    .playCount(0)
+                    .pos(0)
+                    .build();
 
-        if (savedLevel == null) {
-            responseCode = 2;
-        } else {
-            levelId = savedLevel.getId();
+            Level savedLevel = levelService.save(level);
+
+            if (savedLevel == null) {
+                responseCode = 2;
+            } else {
+                levelId = savedLevel.getId();
+            }
         }
 
-        //TODO: THIS MIGHT BE WRONG?
         //TODO: MIGHT NEED TO UPDATE TO ACCOUNT FOR UPDATING ALREADY UPLOADED LEVELS
         return new ResponseEntity<>("<save_level r=\"" + responseCode + "\" n=\"" + levelName +  "\" tnurl=\"" + tnurl + "\" id=\"" + levelId
                 + "\" gn=\"" + gameName + "\" uid=\"" + uid + "\" />", HttpStatus.OK);
@@ -466,39 +529,49 @@ public class GalaxyServer {
         String type = element.getAttribute("t");
         int count = Integer.parseInt(element.getAttribute("c"));
 
-        List<Level> allLevelsWithName = levelService.findAllByGameName(gameName);
+        List<Level> allLevelsByGame = levelService.findAllByGameName(gameName);
         List<Level> filteredLevels = new ArrayList<>();
 
-        int maxSize = Math.min(count, allLevelsWithName.size());
+        int maxSize = Math.min(count, allLevelsByGame.size());
         // Switch based on what type of getTop it is
+        List<Level> sortedLevels;
         switch (type) {
             case "b":
                 // Best Levels
-                List<Level> sortedLevels = allLevelsWithName.stream()
+                sortedLevels = allLevelsByGame.stream()
                         .sorted(Comparator.comparing(Level::getRating))
                         .collect(Collectors.toList());
-
-                // Filter down to the top X levels
-                for (int i = 0; i < maxSize; i++) {
-                    filteredLevels.add(sortedLevels.get(i));
-                }
+                Collections.reverse(sortedLevels);
                 break;
             case "r":
                 // Random Level
-
+                sortedLevels = allLevelsByGame;
+                if (!sortedLevels.isEmpty()) {
+                    Collections.shuffle(sortedLevels);
+                }
                 break;
             case "l":
                 // Latest Levels
-
+                sortedLevels = allLevelsByGame.stream()
+                        .sorted(Comparator.comparing(Level::getSharedDate))
+                        .collect(Collectors.toList());
+                Collections.reverse(sortedLevels);
                 break;
             default:
                 // Unhandled type
                 System.out.println("[Galaxy][POST] Unhandled type: " + type);
+                sortedLevels = new ArrayList<>();
                 break;
         }
 
+        // Filter down to the top X levels
+        for (int i = 0; i < maxSize; i++) {
+            filteredLevels.add(sortedLevels.get(i));
+        }
+
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("<get_top r=\"0\" c=\"" + maxSize + "\" t=\"" + type + "\" gn=\"" + gameName + "\">");
+        String openingTag = "<get_top r=\"0\" c=\"" + maxSize + "\" t=\"" + type + "\" gn=\"" + gameName + "\">";
+        stringBuilder.append(openingTag);
 
         if (filteredLevels.isEmpty()) {
             // No levels match
@@ -509,10 +582,10 @@ public class GalaxyServer {
                 User creator = userService.findByUUID(level.getUserId()).orElse(null);
                 String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
 
-                stringBuilder.append("<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                String levelData = "<level id=\"" + level.getId() + "\" uid=\"" + level.getUserId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
                         + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
-                        + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>");
-                //stringBuilder.append("<level id=\"" + level.getId() + "\" uid=\"" + level.getUserId() + "\" n=\"" + level.getLevelName() + "\"/>");
+                        + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>";
+                stringBuilder.append(levelData);
             }
         }
 
@@ -521,14 +594,82 @@ public class GalaxyServer {
         return new ResponseEntity<>(stringBuilder.toString(), HttpStatus.OK);
     }
 
-    /*
-    // Game to get
-    String gamePath = element.getAttribute("tnpath").replaceFirst("data/", "");
-    // Load the users file
-    Resource resource = fileService.load(gamePath + "/uglevels.rdf");
-    // Load their save to a string
-    String content = "";
-    byte[] targetArray = org.apache.commons.io.IOUtils.toByteArray(resource.getInputStream());
-    content = RDFUtil.decode(new String(targetArray, StandardCharsets.ISO_8859_1));
-    */
+    private ResponseEntity<String> endLevel(Element element) {
+        Integer levelId = Integer.valueOf(element.getAttribute("id"));
+        Level level = levelService.findLevelById(levelId).orElse(null);
+
+        if (level != null) {
+            // INCREMENT PLAY COUNT
+            level.setPlayCount(level.getPlayCount() + 1);
+
+            // UPDATE RATING
+            // Get the current level ratings
+            Integer ratingCount = level.getRatingCount();
+            Double rating = level.getRatingRaw();
+
+            // Grab the rating submitted by the user
+            Integer submittedRating = Integer.valueOf(element.getAttribute("rat"));
+
+            // Calculate the new rating
+            double newRating = rating + submittedRating;
+            Integer newRatingCount = ratingCount + 1;
+
+            // Store them back into the level object
+            level.setRating(newRating);
+            level.setRatingCount(newRatingCount);
+            level.setPos(level.getPos() + submittedRating);
+
+            // RE-SAVE THE LEVEL
+            levelService.save(level);
+        }
+
+        String uid = element.getAttribute("uid");
+        String id = element.getAttribute("id");
+        String response = "<end_level r=\"0\" end=\"1\" uid=\"" + uid + "\" id=\"" + id + "\" />";
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> search(Element element) {
+        StringBuilder response = new StringBuilder();
+
+        // Add the starting tag
+        String openingTag = "<search r=\"0\">";
+        response.append(openingTag);
+
+        String gameName = element.getAttribute("gn");
+        String searchType = element.getAttribute("t");
+        String searchKeyword = element.getAttribute("w");
+
+        List<Level> searchResults;
+        switch(searchType) {
+            case "k": // KEYWORD
+                searchResults = levelService.findAllByGameNameAndKeyword(gameName, searchKeyword);
+                break;
+            case "a": // AUTHOR
+                searchResults = levelService.findAllByGameNameAndAuthor(gameName, searchKeyword);
+                break;
+            case "g": // LEVEL NAME
+                searchResults = levelService.findAllByGameNameAndLevelName(gameName, searchKeyword);
+                break;
+            default:
+                System.out.println("[GALAXY][POST] Unhandled Game Maker search type: " + searchType);
+                searchResults = new ArrayList<>();
+                break;
+        }
+
+        for (Level level : searchResults) {
+            User creator = userService.findByUUID(level.getUserId()).orElse(null);
+            String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
+
+            String levelData = "<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                    + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
+                    + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>";
+            response.append(levelData);
+        }
+
+        // Add the closing tag
+        response.append("</search>");
+
+        return new ResponseEntity<>(response.toString(), HttpStatus.OK);
+    }
 }

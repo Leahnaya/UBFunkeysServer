@@ -1,7 +1,15 @@
 package com.icedberries.UBFunkeysServer.DatabaseSetup;
 
-import com.icedberries.UBFunkeysServer.domain.*;
-import com.icedberries.UBFunkeysServer.service.*;
+import com.icedberries.UBFunkeysServer.domain.Cleaning;
+import com.icedberries.UBFunkeysServer.domain.Familiar;
+import com.icedberries.UBFunkeysServer.domain.Item;
+import com.icedberries.UBFunkeysServer.domain.Jammer;
+import com.icedberries.UBFunkeysServer.domain.Mood;
+import com.icedberries.UBFunkeysServer.service.CleaningService;
+import com.icedberries.UBFunkeysServer.service.FamiliarService;
+import com.icedberries.UBFunkeysServer.service.ItemService;
+import com.icedberries.UBFunkeysServer.service.JammerService;
+import com.icedberries.UBFunkeysServer.service.MoodService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;

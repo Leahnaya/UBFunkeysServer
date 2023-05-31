@@ -27,7 +27,7 @@ public class ArkOneController implements TcpHandler {
     public static final String IP_ADDRESS = "127.0.0.1";
 
     @Autowired
-    Server server;
+    private Server server;
 
     // Services
     @Autowired
@@ -38,22 +38,22 @@ public class ArkOneController implements TcpHandler {
 
     // Plugins
     @Autowired
-    BasePlugin basePlugin;
+    private BasePlugin basePlugin;
 
     @Autowired
-    UserPlugin userPlugin;
+    private UserPlugin userPlugin;
 
     @Autowired
-    GalaxyPlugin galaxyPlugin;
+    private GalaxyPlugin galaxyPlugin;
 
     @Autowired
-    TrunkPlugin trunkPlugin;
+    private TrunkPlugin trunkPlugin;
 
     @Autowired
-    MultiplayerPlugin multiplayerPlugin;
+    private MultiplayerPlugin multiplayerPlugin;
 
     @Autowired
-    RainbowShootoutPlugin rainbowShootoutPlugin;
+    private RainbowShootoutPlugin rainbowShootoutPlugin;
 
     @Override
     public void receiveData(Connection connection, byte[] data) {
@@ -121,10 +121,10 @@ public class ArkOneController implements TcpHandler {
                         responses.add(userPlugin.DeleteBuddyResponse(commandInfo, connection));
                         break;
                     case "u_inv":
-                        responses.add(userPlugin.InvitePlayer());
+                        responses.add(userPlugin.InvitePlayer(commandInfo, connection, routingString.get(1)));
                         break;
                     case "u_inr":
-                        responses.add(userPlugin.InviteBuddyResponse());
+                        responses.add(userPlugin.InviteBuddyResponse(commandInfo, connection, routingString.get(1)));
                         break;
                     case "p":
                         responses.add(userPlugin.Ping(connection));
@@ -135,7 +135,7 @@ public class ArkOneController implements TcpHandler {
                         responses.add(rainbowShootoutPlugin.CharacterMove(commandInfo));
                         break;
                     case "bs":
-                        responses.add(rainbowShootoutPlugin.BlockShot());
+                        responses.add(rainbowShootoutPlugin.BlockShot(commandInfo, connection));
                         break;
 
                     // ---------------------------- Plugin 7 (Galaxy) --------------------------- \\
@@ -207,16 +207,16 @@ public class ArkOneController implements TcpHandler {
 
                     // ----------------------- Multiplayer (Shared by all) ---------------------- \\
                     case "lv":
-                        responses.add(multiplayerPlugin.LeaveGame());
+                        //responses.add(multiplayerPlugin.LeaveGame(routingString.get(1)));
                         break;
                     case "rp":
-                        responses.add(multiplayerPlugin.ReadyPlay());
+                        //responses.add(multiplayerPlugin.ReadyPlay());
                         break;
                     case "ms":
                         responses.add(multiplayerPlugin.MessageOpponent(commandInfo, connection, routingString.get(1)));
                         break;
                     case "pa":
-                        responses.add(multiplayerPlugin.PlayAgain());
+                        //responses.add(multiplayerPlugin.PlayAgain());
 
                     // ---------------------------- Conflict Commands --------------------------- \\
                     case "jn":

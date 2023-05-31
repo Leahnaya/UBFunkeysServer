@@ -55,4 +55,8 @@ public class MultiplayerPlugin {
 
         return ArkOneParser.RemoveXMLTag(resp);
     }
+
+    //public String LeaveGame(String plugin) {
+
+    //}
 }

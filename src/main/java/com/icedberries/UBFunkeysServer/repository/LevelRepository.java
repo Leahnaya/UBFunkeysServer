@@ -15,8 +15,8 @@ public interface LevelRepository extends CrudRepository<Level, Integer> {
     @Query("select level from Level level where level.levelName = :levelName")
     Optional<Level> getLevelByName(@Param("levelName") String levelName);
 
-    @Query("select level from Level level where level.userId = :userId")
-    List<Level> getLevelsByUserId(@Param("userId") Integer userId);
+    @Query("select level from Level level where level.gameName = :gameName and level.userId = :userId")
+    List<Level> getLevelsByGameNameAndUserId(@Param("gameName") String gameName, @Param("userId") Integer userId);
 
     Boolean existsByLevelNameAndGameName(String levelName, String gameName);
 
@@ -25,4 +25,21 @@ public interface LevelRepository extends CrudRepository<Level, Integer> {
 
     @Query("select level from Level level where level.id = :id")
     Optional<Level> findLevelById(@Param("id") Integer id);
+
+    @Query("select level from Level level" +
+            " left join User user on level.userId = user.UUID" +
+            " where level.gameName = :gameName" +
+            " and ((level.levelName like %:keyword%) or (user.username like %:keyword%))")
+    List<Level> findAllByGameNameAndKeyword(@Param("gameName") String gameName, @Param("keyword") String keyword);
+
+    @Query("select level from Level level" +
+            " left join User user on level.userId = user.UUID" +
+            " where level.gameName = :gameName" +
+            " and user.username like %:author%")
+    List<Level> findAllByGameNameAndAuthor(@Param("gameName") String gameName, @Param("author") String author);
+
+    @Query("select level from Level level" +
+            " where level.gameName = :gameName" +
+            " and level.levelName like %:levelName%")
+    List<Level> findAllByGameNameAndLevelName(@Param("gameName") String gameName, @Param("levelName") String levelName);
 }
