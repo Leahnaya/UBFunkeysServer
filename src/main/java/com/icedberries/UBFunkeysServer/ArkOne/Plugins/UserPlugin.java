@@ -470,7 +470,10 @@ public class UserPlugin {
 
         if (buddy != null) {
             switch (plugin) {
-                case "5":
+                case "1": // Ace - Operation Flight Plan | Mulch - <GAME NAME>
+
+                    break;
+                case "5": // Lucky - Rainbow Shootout
                     // Create new entry for the invitee
                     RainbowShootout newRS = RainbowShootout.builder()
                             .username(buddy.getUsername())

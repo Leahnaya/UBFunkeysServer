@@ -235,6 +235,9 @@ public class GalaxyServer {
                 case "search":
                     response = search((Element)nodes.item(0));
                     break;
+                case "get_level_info":
+                    response = getLevelInfo((Element)nodes.item(0));
+                    break;
                 default:
                     System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -671,5 +674,31 @@ public class GalaxyServer {
         response.append("</search>");
 
         return new ResponseEntity<>(response.toString(), HttpStatus.OK);
+    }
+
+    /**
+     * Get the level info for a level by ID
+     * NOTES:
+     * - This method is only used when challenging a friend
+     * - The level should always exist from here as it must've been shared to challenge a friend
+     * @param element the request element extracted from the XML
+     * @return level info for the requested level
+     */
+    private ResponseEntity<String> getLevelInfo(Element element) {
+        Integer levelId = Integer.valueOf(element.getAttribute("id"));
+        Level level = levelService.findLevelById(levelId).orElse(null);
+
+        String levelData = "";
+        try {
+            User creator = userService.findByUUID(level.getUserId()).orElse(null);
+            String creatorName = creator != null ? creator.getUsername() : "UNKNOWN";
+            levelData += "<level id=\"" + level.getId() + "\" sh=\"1\" ver=\"1\" n=\"" + level.getLevelName()
+                    + "\" v=\"" + level.getPlayCount() + "\" un=\"" + creatorName + "\" r=\"" + level.getRating()
+                    + "\" tnurl=\"" + level.getImagePath() + "\" pos=\"" + level.getPos() + "\"/>";
+        }
+        catch (NullPointerException e) {
+            return new ResponseEntity<>("<get_level_info r=\"0\" id=\"" + levelId + "\"><level tnurl=\"\" /></get_level_info>", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("<get_level_info r=\"0\" id=\"" + levelId + "\">" + levelData + "</get_level_info>", HttpStatus.OK);
     }
 }
