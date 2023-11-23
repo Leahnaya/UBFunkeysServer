@@ -8,6 +8,8 @@ This server is made using Java, Spring Boot and Maven in Java 8.
 
 ```
 Lauthai started this server while working in tandem with Lako, who was developing in their own code.  Both servers have many of the same features available, but there are a few that haven't been ported over to this server (Lucky, Sprocket, Snipe and Dyer's games), and will need to be ported at some point by someone.
+
+Lako's Repo is here: <To be put here once his repo is public>
 ```
 
 ## Project Features
