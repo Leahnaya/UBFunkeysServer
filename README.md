@@ -128,6 +128,10 @@ The .war file can be deployed using something like Tomcat to host the webapp.  T
 
 We welcome people to open pull requests as you complete and implement any of the missing/partially working features!  The more that people help out, the faster we can restore every feature that once existed!
 
+## BUGS?!
+
+If you find a bug, please report it here on GitHub so that we can track it to ensure it is properly taken care of.
+
 ## Credits
 As people contribute to the development of the server they will be added here:
 
