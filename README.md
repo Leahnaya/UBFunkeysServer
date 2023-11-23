@@ -9,7 +9,7 @@ This server is made using Java, Spring Boot and Maven in Java 8.
 
 > Lauthai started this server while working in tandem with Lako, who was developing in their own code.  Both servers have many of the same features available, but there are a few that haven't been ported over to this server (Lucky, Sprocket, Snipe and Dyer's games), and will need to be ported at some point by someone.
 >
-> Lako's Repo is here: To be put here once his repo is public
+> Lako's Repo is here: [A1Emu](https://github.com/GittyMac/A1Emu)
 
 ## Project Features
 The following lists will help keep track of what features are implemented, partial working, and not yet implemented.
@@ -65,12 +65,14 @@ The following items are currently partially implemented:
 #### Galaxy Server
 * Challenging Friends to Ace/Mulch Levels
   * Currently sends a game response back but causes the game to only display a black screen.  Needs investigation into why get_level_info doesn't work properly.
+* Sending/Saving Images for shared levels
 
 ### Not Yet Implemented
 The following items are not yet implemented:
 
 ***TRYING TO ACCESS/USE ANY OF THESE FEATURES HAVE A MUCH HIGHER LIKELYHOOD OF CRASHING YOUR GAME - DO NOT ATTEMPT TO ACCESS WHILE USING THE SERVER***
 
+#### ArkOne Server
 * Plugin 2 - Chat Rooms
 * Plugin 4 - Jongg Challenge
 * Plugin 6 - Bombastic Billiards
@@ -78,6 +80,9 @@ The following items are not yet implemented:
 * Plugin 9 - Checkers
 * Plugin 11 - Rasteroids
 * Plugin 12 - Lilytadd Tiles
+
+#### Galaxy Server
+* Ace Mulch Trophy Icon
 
 Features from Lako's Server that need to be migrated:
 * Sprocket's Game
