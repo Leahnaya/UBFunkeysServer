@@ -130,6 +130,15 @@ The .war file can be deployed using something like Tomcat to host the webapp.  T
 * 80 - HTTP
 * 20502 - TCP
 
+### Configuring OpenFK
+Lastly, you will need to run the "Configure OpenFK.bat" located in your installation directory.  First check the box to enable networking.  Then you'll need to set the following fields replcating "127.0.0.1" with the server's IP address (can leave as is if just running locally):
+```
+HTTP Host 1: http://127.0.0.1:80
+HTTP Host 2: http://127.0.0.1:80
+TCP Host: 127.0.0.1
+TCP Port: 20502
+```
+
 ## Contributing
 
 We welcome people to open pull requests as you complete and implement any of the missing/partially working features!  The more that people help out, the faster we can restore every feature that once existed!
