@@ -8,6 +8,8 @@ import com.icedberries.UBFunkeysServer.service.RainbowShootoutService;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,10 @@ import java.util.UUID;
 
 @Service
 public class UserPlugin {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private static final String LOG_BASE = "[ArkOne]";
 
     @Autowired
     Server server;
@@ -496,7 +502,7 @@ public class UserPlugin {
                     }
                     break;
                 default:
-                    System.out.println("[ArkOne][ERROR] Unhandled plugin with ID [" + plugin + "] in UserPlugin.InvitePlayer!");
+                    log.error("{} Unhandled plugin with ID [{}] in UserPlugin.InvitePlayer", LOG_BASE, plugin);
                     return "<notneeded />";
             }
 
@@ -533,7 +539,7 @@ public class UserPlugin {
                             .ifPresent(myRS -> rainbowShootoutService.delete(myRS));
                     break;
                 default:
-                    System.out.println("[ArkOne][ERROR] Unhandled plugin with ID [" + plugin + "] in UserPlugin.InviteBuddyResponse!");
+                    log.error("{} Unhandled plugin with ID [{}] in UserPlugin.InviteBuddyResponse", LOG_BASE, plugin);
                     return "<notneeded />";
             }
         }

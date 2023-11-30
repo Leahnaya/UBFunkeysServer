@@ -2,6 +2,8 @@ package com.icedberries.UBFunkeysServer.service.impl;
 
 import com.icedberries.UBFunkeysServer.property.FileStorageProperty;
 import com.icedberries.UBFunkeysServer.service.FileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -19,6 +21,10 @@ import java.nio.file.StandardCopyOption;
 
 @Service
 public class FileServiceImpl implements FileService {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private static final String LOG_BASE = "[Galaxy]";
 
     private final Path fileStorageLocation;
 
@@ -38,7 +44,7 @@ public class FileServiceImpl implements FileService {
             InputStream imageContentStream = new ByteArrayInputStream(imageData);
             Path pathToFile = Paths.get(fileStorageLocation.toString(), subDirAndFileName);
             Files.copy(imageContentStream, pathToFile, StandardCopyOption.REPLACE_EXISTING);
-            System.out.println("[Galaxy][PUT] Image saved successfully");
+            log.info("{}[PUT] Image saved successfully", LOG_BASE);
         } catch(Exception e) {
             throw new RuntimeException("Could not store the profile file. Error: " + e.getMessage());
         }
@@ -50,6 +56,7 @@ public class FileServiceImpl implements FileService {
             Files.createDirectories(fileStorageLocation.resolve(subDir));
             Files.copy(file.getInputStream(), fileStorageLocation.resolve(subDir).resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
         } catch(Exception e) {
+            log.error("{} Failed to save profile part", LOG_BASE, e);
             throw new RuntimeException("Could not store the profile file. Error: " + e.getMessage());
         }
     }
@@ -66,6 +73,7 @@ public class FileServiceImpl implements FileService {
                 return null;
             }
         } catch(MalformedURLException e) {
+            log.error("{} Failed to load resource at: {}", LOG_BASE, path, e);
             throw new RuntimeException("Error: " + e.getMessage());
         }
     }

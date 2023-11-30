@@ -12,6 +12,8 @@ import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
 import javagrinko.spring.tcp.TcpController;
 import javagrinko.spring.tcp.TcpHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Element;
 
@@ -24,7 +26,11 @@ import java.util.UUID;
 @TcpController
 public class ArkOneController implements TcpHandler {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
     public static final String IP_ADDRESS = "127.0.0.1";
+
+    private static final String LOG_BASE = "[ArkOne]";
 
     @Autowired
     private Server server;
@@ -59,7 +65,7 @@ public class ArkOneController implements TcpHandler {
     public void receiveData(Connection connection, byte[] data) {
         // Log the received request
         String xmlData = new String(data);
-        System.out.println("[ArkOne] New Request: " + xmlData);
+        log.info("{} New Request: {}", LOG_BASE, xmlData);
 
         // Create a list of responses to send back
         ArrayList<String> responses = new ArrayList<>();
@@ -224,7 +230,7 @@ public class ArkOneController implements TcpHandler {
                             case "2":
                                 //TODO: IMPLEMENT CHAT - For now throw unhandled
                                 responses.add("<unknown />");
-                                System.out.println("[ArkOne][ERROR] Unhandled command: " + commandInfo.getNodeName());
+                                log.error("{} Unhandled command: {}", LOG_BASE, commandInfo.getNodeName());
                                 //responses.add(chatPlugin.JoinChat());
                                 break;
                             case "5":
@@ -232,7 +238,7 @@ public class ArkOneController implements TcpHandler {
                                 break;
                             default:
                                 responses.add("<unknown />");
-                                System.out.println("[ArkOne][Error] Unhandled 'jn' route to plugin: " + routingString.get(1));
+                                log.error("{} Unhandled 'jn' route to plugin: {}", LOG_BASE, routingString.get(1));
                                 break;
                         }
                         break;
@@ -246,7 +252,7 @@ public class ArkOneController implements TcpHandler {
                                 break;
                             default:
                                 responses.add("<unknown />");
-                                System.out.println("[ArkOne][Error] Unhandled 'sp' route to plugin: " + routingString.get(1));
+                                log.error("{} Unhandled 'sp' route to plugin: {}", LOG_BASE, routingString.get(1));
                                 break;
                         }
                         break;
@@ -254,12 +260,11 @@ public class ArkOneController implements TcpHandler {
                     // -------------------------------------------------------------------------- \\
                     default:
                         responses.add("<unknown />");
-                        System.out.println("[ArkOne][ERROR] Unhandled command: " + commandInfo.getNodeName());
+                        log.error("{} Unhandled command: {}", LOG_BASE, commandInfo.getNodeName());
                         break;
                 }
             } catch (Exception e) {
-                System.out.println("[ArkOne][ERROR] Unknown error occurred: ");
-                e.printStackTrace();
+                log.error("{} Unknown error occurred", LOG_BASE, e);
                 responses.add("<unknown />");
             }
         }
@@ -274,10 +279,9 @@ public class ArkOneController implements TcpHandler {
 
                 connection.send(outputStream.toByteArray());
 
-                System.out.println("[ArkOne] Response: " + response);
+                log.info("{} Response: {}", LOG_BASE, response);
             } catch (IOException e) {
-                System.out.println("[ArkOne][ERROR] Unknown error occurred: ");
-                e.printStackTrace();
+                log.error("{} Unknown error occurred", LOG_BASE, e);
             }
         }
     }

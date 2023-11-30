@@ -4,6 +4,8 @@ import com.icedberries.UBFunkeysServer.ArkOne.ArkOneParser;
 import com.icedberries.UBFunkeysServer.service.FileService;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
@@ -29,6 +31,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Service
 public class GalaxyPlugin {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private static final String LOG_BASE = "[ArkOne]";
 
     @Autowired
     Server server;
@@ -207,7 +213,7 @@ public class GalaxyPlugin {
                 }
                 break;
             default:
-                System.out.println("[ArkOne][ERROR] gls had a category value of: " + category);
+                log.error("{} gls had a category value of: {}", LOG_BASE, category);
                 break;
         }
 

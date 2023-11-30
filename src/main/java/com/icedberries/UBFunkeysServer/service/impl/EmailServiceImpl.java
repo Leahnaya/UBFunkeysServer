@@ -1,6 +1,8 @@
 package com.icedberries.UBFunkeysServer.service.impl;
 
 import com.icedberries.UBFunkeysServer.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -16,6 +18,10 @@ import javax.mail.internet.MimeMessage;
 
 @Service("emailService")
 public class EmailServiceImpl implements EmailService {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private static final String LOG_BASE = "[Galaxy]";
 
     @Autowired
     private JavaMailSender mailsender;
@@ -45,11 +51,10 @@ public class EmailServiceImpl implements EmailService {
 
         try {
             mailsender.send(preparator);
-            System.out.println("[GALAXY][POST] Email send successfully to: " + to);
+            log.info("{} Email sent successfully to: {}", LOG_BASE, to);
             return true;
         } catch(MailException e) {
-            System.out.println("[GALAXY][POST][ERROR] Unable to send email to: " + to);
-            e.printStackTrace();
+            log.error("{} Unable to send email to: {}", LOG_BASE, to, e);
             return false;
         }
     }

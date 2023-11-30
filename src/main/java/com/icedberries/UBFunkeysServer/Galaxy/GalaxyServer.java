@@ -11,6 +11,8 @@ import com.icedberries.UBFunkeysServer.service.LevelService;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -51,6 +53,13 @@ import java.util.stream.Collectors;
 @RestController
 public class GalaxyServer {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private static final String LOG_BASE = "[Galaxy]";
+    private static final String LOG_GET = "[GET]";
+    private static final String LOG_PUT = "[PUT]";
+    private static final String LOG_POST = "[POST]";
+
     @Autowired
     private EmailService emailService;
 
@@ -76,7 +85,7 @@ public class GalaxyServer {
         // Change the file path to use spaces
         pathToFile = StringUtils.removeStart(pathToFile.replace("%20", " "), "/");
 
-        System.out.println("[Galaxy][GET] Request for file: " + pathToFile);
+        log.info("{}{} Request for file: {}", LOG_BASE, LOG_GET, pathToFile);
 
         int errorCode = 0;
 
@@ -103,13 +112,12 @@ public class GalaxyServer {
                 imageData = FileCopyUtils.copyToByteArray(resource.getInputStream());
             } catch (IOException e) {
                 // Print the error to the log but let the data be null, so we return a bad data response
-                System.out.println("[Galaxy][GET] Exception thrown when loading image: ");
-                e.printStackTrace();
+                log.error("{}{} Exception thrown when loading image", LOG_BASE, LOG_GET, e);
             }
 
             // Verify that something was loaded
             if (imageData == null) {
-                System.out.println("[Galaxy][GET][ERROR] Game maker image not found!");
+                log.error("{}{} Game maker image not found!", LOG_BASE, LOG_GET);
                 errorCode = HttpServletResponse.SC_NOT_FOUND;
                 response.sendError(errorCode);
                 return;
@@ -123,9 +131,9 @@ public class GalaxyServer {
             IOUtils.copy(fileContentStream, response.getOutputStream());
 
             // Flush the buffer
-            // MIGHT ALSO NEED TO SET THE FILE CONTENT LENGTH AS A HEADER
+            //todo:  MIGHT ALSO NEED TO SET THE FILE CONTENT LENGTH AS A HEADER?
             response.flushBuffer();
-            System.out.println("[Galaxy][GET] Game maker image sent!");
+            log.info("{}{} Game maker image sent", LOG_BASE, LOG_GET);
             return;
         }
 
@@ -150,15 +158,13 @@ public class GalaxyServer {
             }
         } catch (IOException e) {
             // File read errors caught here
-            System.out.println("[Galaxy][GET][ERROR] Problem loading file: " + pathToFile);
-            e.printStackTrace();
+            log.error("{}{} Problem loading file at: {}", LOG_BASE, LOG_GET, pathToFile, e);
 
             // Set the error code
             errorCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
         } catch (Exception e) {
             // File doesn't exist error caught here
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            log.error("{}{} Exception thrown while retrieving update file: {}", LOG_BASE, LOG_GET, pathToFile, e);
 
             // Set the error code
             errorCode = HttpServletResponse.SC_NOT_FOUND;
@@ -168,8 +174,7 @@ public class GalaxyServer {
                 try {
                     response.sendError(errorCode);
                 } catch (IOException e) {
-                    System.out.println("[Galaxy][GET][ERROR] Problem sending error response to client: ");
-                    e.printStackTrace();
+                    log.error("{}{} Problem sending error response to client", LOG_BASE, LOG_GET, e);
                 }
             }
         }
@@ -177,7 +182,7 @@ public class GalaxyServer {
 
     @PutMapping("/**")
     public void GalaxyPutResponse(@RequestBody byte[] request, HttpServletRequest servletRequest) {
-        System.out.println("[Galaxy][PUT] Saving image file: " + servletRequest.getRequestURI());
+        log.info("{}{} Saving image file: {}", LOG_BASE, LOG_PUT, servletRequest.getRequestURI());
 
         fileService.saveGameMakerImage(request, servletRequest.getRequestURI().replace("data/", ""));
     }
@@ -189,7 +194,7 @@ public class GalaxyServer {
     @PostMapping("/")
     public ResponseEntity<String> GalaxyPostResponse(@RequestBody String xmlBody) {
         // Log the request
-        System.out.println("[Galaxy][POST] Request: " + xmlBody);
+        log.info("{}{} Request: {}", LOG_BASE, LOG_POST, xmlBody);
 
         try {
             // Parse the xml body of the request
@@ -239,17 +244,16 @@ public class GalaxyServer {
                     response = getLevelInfo((Element)nodes.item(0));
                     break;
                 default:
-                    System.out.println("[Galaxy][POST][ERROR] Unhandled type of request for: " + command);
+                    log.error("{}{} Unhandled type of request for: {}", LOG_BASE, LOG_POST, command);
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
             // Log the response
-            System.out.println(response.getBody());
+            log.info("{}{} Response: {}", LOG_BASE, LOG_POST, response.getBody());
 
             // Return to the client
             return response;
         } catch (ParserConfigurationException | IOException | SAXException e) {
-            //System.out.println("[Galaxy][POST][ERROR] Thrown Error: ");
-            e.printStackTrace();
+            log.error("{}{} Error thrown", LOG_BASE, LOG_POST, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -351,8 +355,7 @@ public class GalaxyServer {
 
             profileData = ArkOneParser.RemoveXMLTag(newDocument);
         } catch (ParserConfigurationException | TransformerException e) {
-            System.out.println("[Galaxy][POST] Exception thrown when saving crib: ");
-            e.printStackTrace();
+            log.error("{}{} Exception thrown when saving crib", LOG_BASE, LOG_POST, e);
             resultCode = 1;
             reason = "Error saving crib! Please try again later...";
         }
@@ -491,8 +494,7 @@ public class GalaxyServer {
 
             levelData = ArkOneParser.RemoveXMLTag(newDocument);
         } catch (ParserConfigurationException | TransformerException e) {
-            System.out.println("[Galaxy][POST] Exception thrown when saving crib: ");
-            e.printStackTrace();
+            log.error("{}{} Exception thrown when saving level", LOG_BASE, LOG_POST, e);
             responseCode = 1;
         }
 
@@ -562,7 +564,7 @@ public class GalaxyServer {
                 break;
             default:
                 // Unhandled type
-                System.out.println("[Galaxy][POST] Unhandled type: " + type);
+                log.error("{}{} Unhandled type: {}", LOG_BASE, LOG_POST, type);
                 sortedLevels = new ArrayList<>();
                 break;
         }
@@ -655,7 +657,7 @@ public class GalaxyServer {
                 searchResults = levelService.findAllByGameNameAndLevelName(gameName, searchKeyword);
                 break;
             default:
-                System.out.println("[GALAXY][POST] Unhandled Game Maker search type: " + searchType);
+                log.error("{}{} Unhandled Game Maker search type: {}", LOG_BASE, LOG_POST, searchType);
                 searchResults = new ArrayList<>();
                 break;
         }

@@ -4,6 +4,8 @@ import com.icedberries.UBFunkeysServer.domain.User;
 import com.icedberries.UBFunkeysServer.service.UserService;
 import javagrinko.spring.tcp.Connection;
 import javagrinko.spring.tcp.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -21,6 +23,10 @@ import java.util.UUID;
 
 @Service
 public class ArkOneSender {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private final String LOG_BASE = "[ArkOne]";
 
     @Autowired
     Server server;
@@ -78,8 +84,7 @@ public class ArkOneSender {
 
                     return;
                 } catch (IOException e) {
-                    System.out.println("[ArkOne][ERROR] Failed to send message to user [" + clientId + "]: " + message);
-                    e.printStackTrace();
+                    log.error("{} Failed to send message to user [{}]: {}", LOG_BASE, clientId, message, e);
                 }
             }
         }
